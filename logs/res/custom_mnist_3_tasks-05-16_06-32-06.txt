@@ -1,0 +1,16 @@
+[2024-05-16 06:32:06 Info] Script args: Namespace(n_tasks=3, n_classes=10, dataset='ds_cont_permuted_mnist', nn_arch='custom_cnn', logname='custom_mnist_3_tasks', results_dir='res', seed=2019, num_workers=1, num_epochs=3, batch_size=128, pruning_percents=[], train_mc_iters=10, std_init=0.06, mean_eta=1, permanent_prune_on_epoch=-1, permanent_prune_on_epoch_percent=90, test_freq=10, contpermuted_beta=4, optimizer='bgd', optimizer_params='{}', inference_mc=True, inference_map=True, inference_committee=True, inference_aggsoftmax=True, inference_initstd=True, committee_size=10, test_mc_iters=10, init_params=['{"bias_type":', '"xavier",', '"conv_type":', '"xavier",', '"bn_init":', '"01"}'], desc=['BGD', 'on', 'continuous', 'permuted', 'mnist_3_tasks'], bw_to_rgb=False, permuted_offset=False, labels_trick=False, num_of_permutations=2, iterations_per_virtual_epc=469, separate_labels_space=False, permute_seed=2019)
+[2024-05-16 06:32:06 Info] Computer name: iiitd with pytorch version: 2.2.2
+[2024-05-16 06:32:06 Info] Transformed model to CUDA
+[2024-05-16 06:32:06 Info] Initialized 2 Conv2d layers using nn.init.xavier_normal_
+[2024-05-16 06:32:06 Info] Initialized 4 linear layers using xavier
+[2024-05-16 06:32:06 Info] Initialized 2 bias conv2d layers using nn.init.xavier.noraml_
+[2024-05-16 06:32:06 Info] Initialized 4 bias linear layers using xavier
+[2024-05-16 06:32:06 Info] Initialized 0 BN layers using weight=1 and bias=0
+[2024-05-16 06:32:06 Info] BGD params: {'mean_eta': 1, 'std_init': 0.06, 'mc_iters': 10}
+[2024-05-16 06:32:06 Info] Inference method: {'committee', 'test_mc', 'agg_softmax', 'init_std', 'map'}
+[2024-05-16 06:32:06 Info] Number of parameters in the model is 592,286
+[2024-05-16 06:32:06 Info] Criterion parameters: type=<class 'torch.nn.modules.loss.CrossEntropyLoss'>
+[2024-05-16 06:32:06 Info] Running training from epoch 1 to epoch 3
+[2024-05-16 06:32:06 Info] Training epoch number 1 with dataset number 0
+[2024-05-16 06:32:13 Info] Epoch 1, train set, Iter 100 current average loss 2.269467814207078 current average acc 0.0%
+[2024-05-16 06:32:19 Info] Epoch 1, train set, Iter 200 current average loss 2.052834867417826 current average acc 0.0%

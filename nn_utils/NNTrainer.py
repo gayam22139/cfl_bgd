@@ -258,6 +258,9 @@ class NNTrainer:
 
             # Get data
             inputs, labels = data
+
+            #Checking input shape
+            #print(inputs.shape)
             inputs, labels = (inputs.to(self.device), labels.to(self.device))
 
             if self.bw_to_rgb and inputs.shape[1] == 1:
@@ -303,8 +306,16 @@ class NNTrainer:
                     else:
                         self.optimizer.randomize_weights()
 
+                #print("Reached here 1")
                 # Forward:
                 outputs = self.net(inputs)
+
+                # print("A sample input is below")
+
+                # print(inputs[0])
+
+
+                # print("Reached here 2")
 
                 # Save running mean and var for BatchNorm layers. We don't want each minibatch to go through the
                 #      running statistics train_mc_iters times, thus we save the running stats after the first
@@ -331,6 +342,7 @@ class NNTrainer:
                     loss = self.criterion(outputs, labels)
 
                 loss_avg.add(loss.item(), inputs.size(0))
+                # print("Loss value is ",loss,"k is ",k,"Batch number is",i)
                 if loss.item() != loss.item():
                     self.logger.info("Loss is NaN!!!")
                 assert loss.item() == loss.item()  # Assert loss is not NaN

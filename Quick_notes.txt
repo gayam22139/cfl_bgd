@@ -1,0 +1,16 @@
+Inference methods are inference_committee,inference_mc,inference_map,inference_aggsoftmax,inference_initstd
+
+The following are the inference methods
+
+if args.inference_committee:
+    assert (args.committee_size > 0)
+    inference_methods.add("committee")
+if args.inference_mc:
+    assert (args.test_mc_iters > 0)
+    inference_methods.add("test_mc")
+if args.inference_map:
+    inference_methods.add("map")
+if args.inference_aggsoftmax:
+    inference_methods.add("agg_softmax")
+if args.inference_initstd:
+    inference_methods.add("init_std")

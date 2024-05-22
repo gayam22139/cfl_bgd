@@ -1,3 +1,4 @@
+import pickle
 import torchvision.transforms as transforms
 import torchvision
 import torch
@@ -8,6 +9,7 @@ from torch.distributions.categorical import Categorical
 import torch.utils.data as data
 from PIL import Image
 import errno
+import pdb
 
 
 def _reduce_class(set, classes, train, preserve_label_space=True):
@@ -75,6 +77,7 @@ class Permutation(torch.utils.data.Dataset):
 
 class DatasetsLoaders:
     def __init__(self, dataset, batch_size=4, num_workers=4, pin_memory=True, **kwargs):
+        # print("kwargs in datasetloaders - ",kwargs)
         self.dataset_name = dataset
         self.valid_loader = None
         self.num_workers = num_workers
@@ -319,11 +322,17 @@ class DatasetsLoaders:
             self.test_loader = torch.utils.data.DataLoader(self.test_set, batch_size=self.batch_size,
                                                            shuffle=False, num_workers=self.num_workers,
                                                            pin_memory=pin_memory)
-        if dataset == "CONTPERMUTEDPADDEDMNIST":
-            transform = transforms.Compose(
-                [transforms.Pad(2, fill=0, padding_mode='constant'),
-                 transforms.ToTensor(),
-                 transforms.Normalize(mean=(0.1000,), std=(0.2752,))])
+        if dataset == "CONTPERMUTEDPADDEDMNIST" or dataset == "CONTPERMUTEDMNIST":
+
+            if dataset == "CONTPERMUTEDPADDEDMNIST":
+                transform = transforms.Compose(
+                    [transforms.Pad(2, fill=0, padding_mode='constant'),
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean=(0.1000,), std=(0.2752,))])
+            
+            if dataset == "CONTPERMUTEDMNIST":
+                transform = transforms.Compose(
+                    [transforms.ToTensor()])
 
             # Original MNIST
             tasks_datasets = [torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)]
@@ -367,6 +376,7 @@ class DatasetsLoaders:
             self.tasks_probs_over_iterations = [_create_task_probs(total_iters, self.num_of_permutations+1, task_id,
                                                                     beta=beta) for task_id in
                                                  range(self.num_of_permutations+1)]
+            
             normalize_probs = torch.zeros_like(self.tasks_probs_over_iterations[0])
             for probs in self.tasks_probs_over_iterations:
                 normalize_probs.add_(probs)
@@ -385,7 +395,7 @@ class DatasetsLoaders:
                                                          num_of_batches=kwargs.get("iterations_per_virtual_epc", 1))
             self.train_loader = torch.utils.data.DataLoader(all_datasets, batch_size=self.batch_size,
                                                             num_workers=self.num_workers, sampler=train_sampler, pin_memory=pin_memory)
-
+        
 
 class ContinuousMultinomialSampler(torch.utils.data.Sampler):
     r"""Samples elements randomly. If without replacement, then sample from a shuffled dataset.
@@ -475,7 +485,9 @@ def _create_task_probs(iters, tasks, task_id, beta=3):
         peak_end = int(((beta * task_id + (beta - 1)) * iters) / (beta * tasks))
         end = min(int(((beta * task_id + (beta + 1)) * iters) / (beta * tasks)), iters)
 
+    #This is a probability dist for each task across iterations
     probs = torch.zeros(iters, dtype=torch.float)
+
     if task_id == 0:
         probs[start:peak_start].add_(1)
     else:
@@ -485,6 +497,10 @@ def _create_task_probs(iters, tasks, task_id, beta=3):
         probs[peak_end:end].add_(1)
     else:
         probs[peak_end:end] = _get_linear_line(peak_end, end, direction="down")
+    
+    with open('probs.txt','w') as f:
+        f.write(str(probs.numpy().tolist()))
+
     return probs
 
 
@@ -662,6 +678,34 @@ class NOTMNIST(data.Dataset):
 ###########################################################################
 
 
+#Here I am adding a custom callable dataset
+
+#Loading the custom dataset
+
+
+
+# def ds_mnist_exp(**kwargs):
+#     mnist_exp_datasets = pickle.load(open("permuted_mnist_tasks_modified_labels(3).pkl","rb"))
+#     # print("Experiment datasets\n")
+#     # print(mnist_exp_datasets)
+#     # print("\n\n")
+#     t1_dataset = mnist_exp_datasets[0]
+#     t2_dataset = mnist_exp_datasets[1]
+#     t3_dataset = mnist_exp_datasets[2]
+
+#     t1_train,t1_test = t1_dataset[0],t1_dataset[1]
+#     t2_train,t2_test = t2_dataset[0],t2_dataset[1]
+#     t3_train,t3_test = t3_dataset[0],t3_dataset[1]
+
+#     t1_x_train,t1_y_train,t1_x_test,t1_y_test = t1_train[0],t1_train[1],t1_test[0],t1_test[1]
+#     t2_x_train,t2_y_train,t2_x_test,t2_y_test = t2_train[0],t2_train[1],t2_test[0],t2_test[1]
+#     t3_x_train,t3_y_train,t3_x_test,t3_y_test = t3_train[0],t3_train[1],t3_test[0],t3_test[1]
+
+
+
+# # print(t2_y_train)
+# # print(t3_y_test.unique())
+
 def ds_mnist(**kwargs):
     """
     MNIST dataset.
@@ -675,8 +719,21 @@ def ds_mnist(**kwargs):
     dataset = [DatasetsLoaders("MNIST", batch_size=kwargs.get("batch_size", 128),
                                num_workers=kwargs.get("num_workers", 1),
                                pad_to_32=kwargs.get("pad_to_32", False))]
+    
+    dataset_obj = dataset[0]
+    
+    print(dataset)
+
+    print("I am here")
+
     test_loaders = [ds.test_loader for ds in dataset]
     train_loaders = [ds.train_loader for ds in dataset]
+
+    print(len(train_loaders))
+    print(len(test_loaders))
+
+    print("Train and test loaders")
+
     return train_loaders, test_loaders
 
 
@@ -799,6 +856,10 @@ def ds_padded_permuted_mnist_offline(**kwargs):
     return ds_permuted_mnist(pad_to_32=True, offline=True, **kwargs)
 
 
+
+'''This is an important method which actually sends in all keyword arguments and other stuff that provides 
+us an insight into the parameters that DatasetsLoaders class takes in and operates with.
+'''
 def ds_padded_cont_permuted_mnist(**kwargs):
     """
     Continuous Permuted MNIST dataset, padded to 32x32.
@@ -831,6 +892,41 @@ def ds_padded_cont_permuted_mnist(**kwargs):
     train_loaders = [ds.train_loader for ds in dataset]
 
     return train_loaders, test_loaders
+
+#Same as the above method,only thing being padded has been removed and image size would be 28x28 only.
+def ds_cont_permuted_mnist(**kwargs):
+    """
+    Continuous Permuted MNIST dataset
+    Notice that this dataloader is aware to the epoch number, therefore if the training is loaded from a checkpoint
+        adjustments might be needed. 
+    Access dataset.tasks_probs_over_iterations to see the tasks probabilities for each iteration.
+    :param num_epochs: Number of epochs for the training (since it builds distribution over iterations,
+                            it needs this information in advance)
+    :param iterations_per_virtual_epc: In continuous task-agnostic learning, the notion of epoch does not exists,
+                                        since we cannot define 'passing over the whole dataset'. Therefore,
+                                        we define "iterations_per_virtual_epc" -
+                                        how many iterations consist a single epoch.
+    :param contpermuted_beta: The proportion in which the tasks overlap. 4 means that 1/4 of a task duration will
+                                consist of data from previous/next task. Larger values means less overlapping.
+    :param permutations: The permutations which will be used (first task is always the original MNIST).
+    :param batch_size: Batch size.
+    :param num_workers: Num workers.
+    :return: A tuple of (train_loaders, test_loaders). train_loaders is a list of 1 data loader - it loads the
+                permuted MNIST dataset continuously as described in the paper. test_loaders is a list of 1+permutations
+                data loaders, one for each dataset.
+
+    """
+    dataset = [DatasetsLoaders("CONTPERMUTEDMNIST", batch_size=kwargs.get("batch_size", 128),
+                               num_workers=kwargs.get("num_workers", 1),
+                               total_iters=(kwargs.get("num_epochs")*kwargs.get("iterations_per_virtual_epc")),
+                               contpermuted_beta=kwargs.get("contpermuted_beta"),
+                               iterations_per_virtual_epc=kwargs.get("iterations_per_virtual_epc"),
+                               all_permutation=kwargs.get("permutations", []))]
+    test_loaders = [tloader for ds in dataset for tloader in ds.test_loader]
+    train_loaders = [ds.train_loader for ds in dataset]
+
+    return train_loaders, test_loaders
+
 
 
 def ds_visionmix(**kwargs):

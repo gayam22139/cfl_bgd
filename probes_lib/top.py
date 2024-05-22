@@ -65,7 +65,8 @@ class ProbesManager:
         if self.per_epoch_stats is None:
             self.per_epoch_stats = df
         else:
-            self.per_epoch_stats = self.per_epoch_stats.append(df, ignore_index=True, sort=True)
+            #self.per_epoch_stats = self.per_epoch_stats.append(df, ignore_index=True, sort=True)
+            self.per_epoch_stats = pd.concat([self.per_epoch_stats, df], ignore_index=True, sort=True)
 
     def calc_iteration_stats(self):
         last_iteration_stats = {}
@@ -79,7 +80,8 @@ class ProbesManager:
         if self.per_iteration_stats is None:
             self.per_iteration_stats = df
         else:
-            self.per_iteration_stats = self.per_iteration_stats.append(df, ignore_index=True, sort=True)
+            #self.per_iteration_stats = self.per_iteration_stats.append(df, ignore_index=True, sort=True)
+            self.per_iteration_stats = pd.concat([self.per_iteration_stats, df], ignore_index=True, sort=True)
 
     def train(self):
         self.phase ="training"

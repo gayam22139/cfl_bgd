@@ -1,0 +1,5 @@
+__pycache__/
+.github/
+data/
+/ewc_tasks/permuted_mnist_tasks(3).pkl
+/permuted_mnist_tasks_modified_labels(3).pkl

@@ -1,0 +1,62 @@
+[2024-04-05 12:26:03 Info] Script args: Namespace(dataset='ds_padded_cont_permuted_mnist', nn_arch='mnist_simple_net_200width_domainlearning_1024input_10cls_1ds', logname='continuous_permuted_mnist_10tasks', results_dir='res', seed=2019, num_workers=1, num_epochs=200, batch_size=64, pruning_percents=[], train_mc_iters=10, std_init=0.06, mean_eta=1, permanent_prune_on_epoch=-1, permanent_prune_on_epoch_percent=90, test_freq=10, contpermuted_beta=4, optimizer='bgd', optimizer_params='{}', inference_mc=True, inference_map=True, inference_committee=True, inference_aggsoftmax=True, inference_initstd=True, committee_size=10, test_mc_iters=10, init_params=['{"bias_type":', '"xavier",', '"conv_type":', '"xavier",', '"bn_init":', '"01"}'], desc=['BGD', 'on', 'continuous', 'permuted', 'mnist'], bw_to_rgb=False, permuted_offset=False, labels_trick=False, num_of_permutations=9, iterations_per_virtual_epc=940, separate_labels_space=False, permute_seed=2019)
+[2024-04-05 12:26:03 Info] Computer name: iiitd with pytorch version: 2.2.2
+[2024-04-05 12:26:05 Info] Transformed model to CUDA
+[2024-04-05 12:26:05 Info] Initialized 0 Conv2d layers using nn.init.xavier_normal_
+[2024-04-05 12:26:05 Info] Initialized 3 linear layers using xavier
+[2024-04-05 12:26:05 Info] Initialized 0 bias conv2d layers using nn.init.xavier.noraml_
+[2024-04-05 12:26:05 Info] Initialized 3 bias linear layers using xavier
+[2024-04-05 12:26:05 Info] Initialized 0 BN layers using weight=1 and bias=0
+[2024-04-05 12:26:05 Info] BGD params: {'mean_eta': 1, 'std_init': 0.06, 'mc_iters': 10}
+[2024-04-05 12:26:05 Info] Inference method: {'map', 'agg_softmax', 'committee', 'test_mc', 'init_std'}
+[2024-04-05 12:26:05 Info] Number of parameters in the model is 247,210
+[2024-04-05 12:26:05 Info] Criterion parameters: type=<class 'torch.nn.modules.loss.CrossEntropyLoss'>
+[2024-04-05 12:26:05 Info] Running training from epoch 1 to epoch 200
+[2024-04-05 12:26:05 Info] Training epoch number 1 with dataset number 0
+[2024-04-05 12:26:08 Info] Epoch 1, train set, Iter 100 current average loss 1.0007363820523008 current average acc 0.0%
+[2024-04-05 12:26:10 Info] Epoch 1, train set, Iter 200 current average loss 0.7048330916203566 current average acc 0.0%
+[2024-04-05 12:26:12 Info] Epoch 1, train set, Iter 300 current average loss 0.5797222898751495 current average acc 0.0%
+[2024-04-05 12:26:14 Info] Epoch 1, train set, Iter 400 current average loss 0.5002934888256725 current average acc 0.0%
+[2024-04-05 12:26:17 Info] Epoch 1, train set, Iter 500 current average loss 0.44965224900990824 current average acc 0.0%
+[2024-04-05 12:26:19 Info] Epoch 1, train set, Iter 600 current average loss 0.4109567244127397 current average acc 0.0%
+[2024-04-05 12:26:21 Info] Epoch 1, train set, Iter 700 current average loss 0.38264512789941274 current average acc 0.0%
+[2024-04-05 12:26:23 Info] Epoch 1, train set, Iter 800 current average loss 0.35936660168133727 current average acc 0.0%
+[2024-04-05 12:26:25 Info] Epoch 1, train set, Iter 900 current average loss 0.341528598412666 current average acc 0.0%
+[2024-04-05 12:26:26 Info] Stats for train set of size 60160, loss is 0.33490350365341665, acc is 0.0%
+[2024-04-05 12:26:26 Info] Running test set for epoch number 1 for dataset idx 0 using map
+[2024-04-05 12:26:28 Info] Stats for test [map] set of size 10000, loss is 0.12945916841477167, acc is 95.85999999999999%
+[2024-04-05 12:26:28 Info] Running test set for epoch number 1 for dataset idx 1 using map
+[2024-04-05 12:26:30 Info] Stats for test [map] set of size 10000, loss is 2.984079908752442, acc is 9.229999999999988%
+[2024-04-05 12:26:30 Info] Running test set for epoch number 1 for dataset idx 2 using map
+[2024-04-05 12:26:33 Info] Stats for test [map] set of size 10000, loss is 3.2244049774169903, acc is 8.78999999999999%
+[2024-04-05 12:26:33 Info] Running test set for epoch number 1 for dataset idx 3 using map
+[2024-04-05 12:26:36 Info] Stats for test [map] set of size 10000, loss is 3.0603850631713883, acc is 7.559999999999999%
+[2024-04-05 12:26:36 Info] Running test set for epoch number 1 for dataset idx 4 using map
+[2024-04-05 12:26:39 Info] Stats for test [map] set of size 10000, loss is 2.7856000411987276, acc is 9.599999999999998%
+[2024-04-05 12:26:39 Info] Running test set for epoch number 1 for dataset idx 5 using map
+[2024-04-05 12:26:41 Info] Stats for test [map] set of size 10000, loss is 2.9521899688720703, acc is 4.949999999999997%
+[2024-04-05 12:26:41 Info] Running test set for epoch number 1 for dataset idx 6 using map
+[2024-04-05 12:26:44 Info] Stats for test [map] set of size 10000, loss is 2.971364884185791, acc is 8.269999999999992%
+[2024-04-05 12:26:44 Info] Running test set for epoch number 1 for dataset idx 7 using map
+[2024-04-05 12:26:47 Info] Stats for test [map] set of size 10000, loss is 3.229995908737181, acc is 9.509999999999994%
+[2024-04-05 12:26:47 Info] Running test set for epoch number 1 for dataset idx 8 using map
+[2024-04-05 12:26:50 Info] Stats for test [map] set of size 10000, loss is 3.0292039382934592, acc is 9.169999999999993%
+[2024-04-05 12:26:50 Info] Running test set for epoch number 1 for dataset idx 9 using map
+[2024-04-05 12:26:56 Info] Stats for test [map] set of size 10000, loss is 3.1856825698852536, acc is 8.439999999999985%
+[2024-04-05 12:26:56 Info] Average accuracy over all tasks for epoch number 1 for dataset idx 9 using map is 17.137999999999987
+[2024-04-05 12:26:56 Info] Running test set for epoch number 1 for dataset idx 0 using agg_softmax
+[2024-04-05 12:26:59 Info] Stats for test [agg_softmax] set of size 10000, loss is 0.1744372460598501, acc is 95.86999999999996%
+[2024-04-05 12:26:59 Info] Running test set for epoch number 1 for dataset idx 1 using agg_softmax
+[2024-04-05 12:27:01 Info] Stats for test [agg_softmax] set of size 10000, loss is 3.985442523078921, acc is 9.169999999999995%
+[2024-04-05 12:27:01 Info] Running test set for epoch number 1 for dataset idx 2 using agg_softmax
+[2024-04-05 12:27:04 Info] Stats for test [agg_softmax] set of size 10000, loss is 4.282585660018923, acc is 9.079999999999998%
+[2024-04-05 12:27:04 Info] Running test set for epoch number 1 for dataset idx 3 using agg_softmax
+[2024-04-05 12:27:07 Info] Stats for test [agg_softmax] set of size 10000, loss is 4.034636398162854, acc is 6.979999999999997%
+[2024-04-05 12:27:07 Info] Running test set for epoch number 1 for dataset idx 4 using agg_softmax
+[2024-04-05 12:27:10 Info] Stats for test [agg_softmax] set of size 10000, loss is 3.694463662719727, acc is 9.920000000000002%
+[2024-04-05 12:27:10 Info] Running test set for epoch number 1 for dataset idx 5 using agg_softmax
+[2024-04-05 12:27:12 Info] Stats for test [agg_softmax] set of size 10000, loss is 3.8662472074127225, acc is 6.7200000000000015%
+[2024-04-05 12:27:12 Info] Running test set for epoch number 1 for dataset idx 6 using agg_softmax
+[2024-04-05 12:27:15 Info] Stats for test [agg_softmax] set of size 10000, loss is 4.143635024948126, acc is 8.629999999999999%
+[2024-04-05 12:27:15 Info] Running test set for epoch number 1 for dataset idx 7 using agg_softmax
+[2024-04-05 12:27:18 Info] Stats for test [agg_softmax] set of size 10000, loss is 4.288049011688229, acc is 9.389999999999992%
+[2024-04-05 12:27:18 Info] Running test set for epoch number 1 for dataset idx 8 using agg_softmax
