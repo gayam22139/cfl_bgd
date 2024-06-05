@@ -1,10 +1,16 @@
 //
 This command is for testing with all possible testing methods
 
-python main.py --logname continuous_permuted_mnist_3tasks --num_workers 1 --test_freq 10 --permute_seed 2019 --seed 2019 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 3 - 1 )) --optimizer bgd --nn_arch mnist_simple_net_200width_domainlearning_1024input_10cls_1ds --dataset ds_padded_cont_permuted_mnist --num_epochs $(( 3 * 3)) --std_init 0.06 --batch_size 128 --results_dir res --train_mc_iters 10 --inference_mc --test_mc_iters 10 --inference_map --inference_committee --committee_size 10 --inference_aggsoftmax --inference_initstd --desc BGD on continuous permuted mnist
+python main.py --logname continuous_permuted_mnist_3tasks --num_workers 1 --permute_seed 2019 --seed 2019 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 3 - 1 )) --optimizer bgd --nn_arch custom_cnn --dataset ds_cont_permuted_mnist --num_epochs $(( 3 * 3)) --std_init 0.06 --batch_size 128 --results_dir res --train_mc_iters 10 --inference_mc --test_mc_iters 10 --inference_map --inference_committee --committee_size 10 --inference_aggsoftmax --inference_initstd --desc BGD on continuous permuted mnist --labels_trick--separate_labels_space
 
 
 //
 This command is uses only inference_committee testing method
 
-python main.py --logname continuous_permuted_mnist_3tasks --num_workers 1 --test_freq 10 --permute_seed 2019 --seed 2019 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 3 - 1 )) --optimizer bgd --nn_arch mnist_simple_net_200width_domainlearning_1024input_10cls_1ds --dataset ds_padded_cont_permuted_mnist --num_epochs $(( 3 * 3)) --std_init 0.06 --batch_size 128 --results_dir res --train_mc_iters 10 --inference_mc --test_mc_iters 10 --inference_map --inference_committee --committee_size 10 --inference_aggsoftmax --inference_initstd --desc BGD on continuous permuted mnist
+python main.py --logname continuous_permuted_mnist_3tasks --num_workers 1 --permute_seed 2019 --seed 2019 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 3 - 1 )) --optimizer bgd --nn_arch custom_cnn --dataset ds_cont_permuted_mnist --num_epochs $(( 3 * 3)) --std_init 0.06 --batch_size 128 --results_dir res --train_mc_iters 10 --inference_committee --committee_size 10 --desc BGD on continuous permuted mnist --labels_trick --separate_labels_space
+
+
+//
+This command is uses only map testing method
+
+python main.py --logname continuous_permuted_mnist_3tasks --num_workers 1 --permute_seed 2019 --seed 2019 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 3 - 1 )) --optimizer bgd --nn_arch custom_cnn --dataset ds_cont_permuted_mnist --num_epochs $(( 3 * 3)) --std_init 0.06 --batch_size 128 --results_dir res --train_mc_iters 10 --inference_map --desc BGD on continuous permuted mnist --labels_trick --separate_labels_space

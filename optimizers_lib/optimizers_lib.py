@@ -12,6 +12,7 @@ def bgd(model, **kwargs):
     }
     logger.info("BGD params: " + str(bgd_params))
     all_params = [{'params': params} for l, (name, params) in enumerate(model.named_parameters())]
+    # breakpoint()
     return BGD(all_params, **bgd_params)
 
 

@@ -21,10 +21,6 @@ def get_args():
     
     parser = argparse.ArgumentParser(description='Train and record statistics of a Neural Network with BGD')
 
-    #Added custom arguments here,
-    parser.add_argument('--n_tasks',default=None,type=int,help='This is used to explicitly mention number of tasks')
-    parser.add_argument('--n_classes',default=None,type=int,help='This is used to explicitly mention number of classes per task')
-
     parser.add_argument('--dataset', default="ds_mnist", type=str, choices=datasets_names,
                         help='The name of the dataset to train. [Default: ds_mnist]')
     parser.add_argument('--nn_arch', type=str, required=True, choices=archs_names,

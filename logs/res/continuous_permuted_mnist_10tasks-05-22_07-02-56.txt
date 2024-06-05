@@ -1,0 +1,36 @@
+[2024-05-22 07:02:56 Info] Script args: Namespace(n_tasks=None, n_classes=None, dataset='ds_padded_cont_permuted_mnist', nn_arch='mnist_simple_net_200width_domainlearning_1024input_10cls_1ds', logname='continuous_permuted_mnist_10tasks', results_dir='res', seed=2019, num_workers=1, num_epochs=200, batch_size=128, pruning_percents=[], train_mc_iters=10, std_init=0.06, mean_eta=1, permanent_prune_on_epoch=-1, permanent_prune_on_epoch_percent=90, test_freq=10, contpermuted_beta=4, optimizer='bgd', optimizer_params='{}', inference_mc=True, inference_map=True, inference_committee=True, inference_aggsoftmax=True, inference_initstd=True, committee_size=10, test_mc_iters=10, init_params=['{"bias_type":', '"xavier",', '"conv_type":', '"xavier",', '"bn_init":', '"01"}'], desc=['BGD', 'on', 'continuous', 'permuted', 'mnist'], bw_to_rgb=False, permuted_offset=False, labels_trick=False, num_of_permutations=9, iterations_per_virtual_epc=469, separate_labels_space=False, permute_seed=2019)
+[2024-05-22 07:02:56 Info] Computer name: iiitd with pytorch version: 2.2.2
+[2024-05-22 07:02:57 Info] Transformed model to CUDA
+[2024-05-22 07:02:57 Info] Initialized 0 Conv2d layers using nn.init.xavier_normal_
+[2024-05-22 07:02:57 Info] Initialized 3 linear layers using xavier
+[2024-05-22 07:02:57 Info] Initialized 0 bias conv2d layers using nn.init.xavier.noraml_
+[2024-05-22 07:02:57 Info] Initialized 3 bias linear layers using xavier
+[2024-05-22 07:02:57 Info] Initialized 0 BN layers using weight=1 and bias=0
+[2024-05-22 07:02:57 Info] BGD params: {'mean_eta': 1, 'std_init': 0.06, 'mc_iters': 10}
+[2024-05-22 07:02:57 Info] Inference method: {'test_mc', 'committee', 'map', 'init_std', 'agg_softmax'}
+[2024-05-22 07:02:57 Info] Number of parameters in the model is 247,210
+[2024-05-22 07:02:57 Info] Criterion parameters: type=<class 'torch.nn.modules.loss.CrossEntropyLoss'>
+[2024-05-22 07:02:57 Info] Running training from epoch 1 to epoch 200
+[2024-05-22 07:02:57 Info] Training epoch number 1 with dataset number 0
+[2024-05-22 07:03:00 Info] Epoch 1, train set, Iter 100 current average loss 0.8795373121500049 current average acc 0.0%
+[2024-05-22 07:03:03 Info] Epoch 1, train set, Iter 200 current average loss 0.616159205198291 current average acc 0.0%
+[2024-05-22 07:03:06 Info] Epoch 1, train set, Iter 300 current average loss 0.5065797951668531 current average acc 0.0%
+[2024-05-22 07:03:09 Info] Epoch 1, train set, Iter 400 current average loss 0.43923930766061203 current average acc 0.0%
+[2024-05-22 07:03:10 Info] Stats for train set of size 60032, loss is 0.40574039313585, acc is 0.0%
+[2024-05-22 07:03:10 Info] Running test set for epoch number 1 for dataset idx 0 using test_mc
+[2024-05-22 07:03:12 Info] Stats for test [test_mc] set of size 10000, loss is 0.20239444568783063, acc is 93.59400000000021%
+[2024-05-22 07:03:12 Info] Running test set for epoch number 1 for dataset idx 1 using test_mc
+[2024-05-22 07:03:14 Info] Stats for test [test_mc] set of size 10000, loss is 3.3520919903945905, acc is 8.131999999999996%
+[2024-05-22 07:03:14 Info] Running test set for epoch number 1 for dataset idx 2 using test_mc
+[2024-05-22 07:03:16 Info] Stats for test [test_mc] set of size 10000, loss is 3.436505860214233, acc is 7.512999999999999%
+[2024-05-22 07:03:16 Info] Running test set for epoch number 1 for dataset idx 3 using test_mc
+[2024-05-22 07:03:19 Info] Stats for test [test_mc] set of size 10000, loss is 3.357001287422178, acc is 8.537000000000003%
+[2024-05-22 07:03:19 Info] Running test set for epoch number 1 for dataset idx 4 using test_mc
+[2024-05-22 07:03:21 Info] Stats for test [test_mc] set of size 10000, loss is 3.133645272369385, acc is 10.109999999999989%
+[2024-05-22 07:03:21 Info] Running test set for epoch number 1 for dataset idx 5 using test_mc
+[2024-05-22 07:03:24 Info] Stats for test [test_mc] set of size 10000, loss is 3.353489723854063, acc is 8.993999999999982%
+[2024-05-22 07:03:24 Info] Running test set for epoch number 1 for dataset idx 6 using test_mc
+[2024-05-22 07:03:26 Info] Stats for test [test_mc] set of size 10000, loss is 3.310367115821841, acc is 9.368000000000006%
+[2024-05-22 07:03:26 Info] Running test set for epoch number 1 for dataset idx 7 using test_mc
+[2024-05-22 07:03:29 Info] Stats for test [test_mc] set of size 10000, loss is 3.572515377387999, acc is 10.078000000000012%
+[2024-05-22 07:03:29 Info] Running test set for epoch number 1 for dataset idx 8 using test_mc

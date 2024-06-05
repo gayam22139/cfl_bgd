@@ -1,4 +1,3 @@
-import pickle
 import torchvision.transforms as transforms
 import torchvision
 import torch
@@ -9,7 +8,6 @@ from torch.distributions.categorical import Categorical
 import torch.utils.data as data
 from PIL import Image
 import errno
-import pdb
 
 
 def _reduce_class(set, classes, train, preserve_label_space=True):
@@ -324,11 +322,16 @@ class DatasetsLoaders:
                                                            pin_memory=pin_memory)
         if dataset == "CONTPERMUTEDPADDEDMNIST" or dataset == "CONTPERMUTEDMNIST":
 
+            # if dataset == "CONTPERMUTEDPADDEDMNIST":
+            #     transform = transforms.Compose(
+            #         [transforms.Pad(2, fill=0, padding_mode='constant'),
+            #         transforms.ToTensor(),
+            #         transforms.Normalize(mean=(0.1000,), std=(0.2752,))])
+
             if dataset == "CONTPERMUTEDPADDEDMNIST":
                 transform = transforms.Compose(
                     [transforms.Pad(2, fill=0, padding_mode='constant'),
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean=(0.1000,), std=(0.2752,))])
+                    transforms.ToTensor()])
             
             if dataset == "CONTPERMUTEDMNIST":
                 transform = transforms.Compose(
@@ -676,35 +679,6 @@ class NOTMNIST(data.Dataset):
 ###########################################################################
 # Callable datasets
 ###########################################################################
-
-
-#Here I am adding a custom callable dataset
-
-#Loading the custom dataset
-
-
-
-# def ds_mnist_exp(**kwargs):
-#     mnist_exp_datasets = pickle.load(open("permuted_mnist_tasks_modified_labels(3).pkl","rb"))
-#     # print("Experiment datasets\n")
-#     # print(mnist_exp_datasets)
-#     # print("\n\n")
-#     t1_dataset = mnist_exp_datasets[0]
-#     t2_dataset = mnist_exp_datasets[1]
-#     t3_dataset = mnist_exp_datasets[2]
-
-#     t1_train,t1_test = t1_dataset[0],t1_dataset[1]
-#     t2_train,t2_test = t2_dataset[0],t2_dataset[1]
-#     t3_train,t3_test = t3_dataset[0],t3_dataset[1]
-
-#     t1_x_train,t1_y_train,t1_x_test,t1_y_test = t1_train[0],t1_train[1],t1_test[0],t1_test[1]
-#     t2_x_train,t2_y_train,t2_x_test,t2_y_test = t2_train[0],t2_train[1],t2_test[0],t2_test[1]
-#     t3_x_train,t3_y_train,t3_x_test,t3_y_test = t3_train[0],t3_train[1],t3_test[0],t3_test[1]
-
-
-
-# # print(t2_y_train)
-# # print(t3_y_test.unique())
 
 def ds_mnist(**kwargs):
     """

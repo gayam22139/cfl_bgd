@@ -14,3 +14,5 @@ if args.inference_aggsoftmax:
     inference_methods.add("agg_softmax")
 if args.inference_initstd:
     inference_methods.add("init_std")
+
+#The map method is the only inference method for other optimizers,the above options are valid only for bgd optimizer

@@ -16,12 +16,8 @@ from nn_utils.init_utils import init_model
 import optimizers_lib
 
 
-import pdb
-
 #Arguments have been moved to a different file named argparser.py
 args = get_args()
-
-# print("String args is ",str(args),"\n\n\n")
 
 ###########################################################################
 # Verify arguments
@@ -55,12 +51,6 @@ all_permutation = []
 if not args.permute_seed:
     args.permute_seed = int(time()*10000) % (2**31)
 
-if args.n_tasks:
-    args.num_of_permutations = args.n_tasks - 1
-
-
-# print(args.num_of_permutations)
-
 
 set_seed(args.permute_seed, fully_deterministic=False)
 for p_idx in range(args.num_of_permutations):
@@ -70,12 +60,6 @@ for p_idx in range(args.num_of_permutations):
     permutation = list(range(input_size))
     random.shuffle(permutation)
     all_permutation.append(permutation)
-
-
-# print("All permutations is ",len(all_permutation))
-
-# print("A sample permuation ",all_permutation[3])
-# print(len(all_permutation[3]))
 
 #All permutations is a list of lists -> where the size of outer list is number of permuations(received from command line) and each permuation is a list of shuffled(permuted) indices(an arrangement of 784 indices)
 
@@ -121,7 +105,6 @@ lastlogs_logger = None
 
 print("Dataset is ",args.dataset)
 
-# pdb.set_trace()
 
 # Dataset
 train_loaders, test_loaders = utils.datasets.__dict__[args.dataset](batch_size=args.batch_size,
@@ -136,36 +119,11 @@ train_loaders, test_loaders = utils.datasets.__dict__[args.dataset](batch_size=a
 
 
 
-
-#Sample trainloader
-
-# print(len(train_loaders))
-# print(train_loaders[0])
-
-sample_batch = next(iter(train_loaders[0]))
-
-input,labels = sample_batch
-
-# print(input.shape)
-
-# with open("sample_input.txt","w") as f:
-#     f.write(str(input))
-
-
-# print("IN main program",len(test_loaders))
-# print("train loaders ",len(train_loaders))
-
-# print(train_loaders[0])
-
 # Probes manager
 probes_manager = ProbesManager()
 
 # Model
-if args.n_tasks and args.n_classes:
-    model = models.__dict__[args.nn_arch](args.n_classes,args.n_tasks,probes_manager=probes_manager)
-
-else:
-    model = models.__dict__[args.nn_arch](probes_manager=probes_manager)
+model = models.__dict__[args.nn_arch](probes_manager=probes_manager)
 
 if torch.cuda.is_available():
     model = torch.nn.DataParallel(model).cuda()

@@ -32,13 +32,19 @@ class BGD(Optimizer):
         self.mean_eta = mean_eta
         self.mc_iters = mc_iters
         # Initialize mu (mean_param) and sigma (std_param)
+        # breakpoint()
         for group in self.param_groups:
             assert len(group["params"]) == 1, "BGD optimizer does not support multiple params in a group"
             # group['params'][0] is the weights
+            breakpoint()
             assert isinstance(group["params"][0], torch.Tensor), "BGD expect param to be a tensor"
             # We use the initialization of weights to initialize the mean.
             group["mean_param"] = group["params"][0].data.clone()
-            group["std_param"] = torch.zeros_like(group["params"][0].data).add_(self.std_init)
+            #group["std_param"] = torch.zeros_like(group["params"][0].data).add_(self.std_init)
+
+            '''The above line has been replaced by the below line - Shiva Bhai Recommendation'''
+            group["std_param"] = torch.full_like(group["params"][0].data,self.std_init)
+
         self._init_accumulators()
 
     def get_mc_iters(self):
@@ -66,6 +72,8 @@ class BGD(Optimizer):
             # Reparameterization trick (here we set the weights to their randomized value):
             group["params"][0].data.copy_(mean.add(std.mul(group["eps"])))
 
+            '''The above line(Reparamterization) implements this equation -> θi = μi + εiσi'''
+
     def aggregate_grads(self, batch_size):
         """
         Aggregates a single Monte Carlo iteration gradients. Used in step() for the expectations calculations.
@@ -83,7 +91,9 @@ class BGD(Optimizer):
             groups_cnt += 1
             grad = group["params"][0].grad.data.mul(batch_size)
             group["grad_sum"].add_(grad)
+             #The above grad_sum is used to estimate the expectation of gradient which inturn is used in updating μi
             group["grad_mul_eps_sum"].add_(grad.mul(group["eps"]))
+            #The above grad_mul_eps_sum is used to estimate the expectation of gradient multiplied by epsilon which inturn is used in updating σi
             group["eps"] = None
         assert groups_cnt > 0, "Called aggregate_grads, but all gradients were None. Make sure you called .backward()"
 

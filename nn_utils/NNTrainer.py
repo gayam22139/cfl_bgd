@@ -121,6 +121,7 @@ class NNTrainer:
             # Set current dataset
             if hasattr(get_model(self.net), "set_dataset"):
                 get_model(self.net).set_dataset(self.get_dataset_idx(max_epoch=max_epoch))
+                # breakpoint()
             train_loss, train_acc = self.forward(
                 data_loader=self.train_loader[self.get_dataset_idx(max_epoch=max_epoch)], training=True,
                 verbose_freq=verbose_freq)
@@ -259,8 +260,6 @@ class NNTrainer:
             # Get data
             inputs, labels = data
 
-            #Checking input shape
-            #print(inputs.shape)
             inputs, labels = (inputs.to(self.device), labels.to(self.device))
 
             if self.bw_to_rgb and inputs.shape[1] == 1:
@@ -306,16 +305,8 @@ class NNTrainer:
                     else:
                         self.optimizer.randomize_weights()
 
-                #print("Reached here 1")
                 # Forward:
                 outputs = self.net(inputs)
-
-                # print("A sample input is below")
-
-                # print(inputs[0])
-
-
-                # print("Reached here 2")
 
                 # Save running mean and var for BatchNorm layers. We don't want each minibatch to go through the
                 #      running statistics train_mc_iters times, thus we save the running stats after the first
@@ -342,7 +333,6 @@ class NNTrainer:
                     loss = self.criterion(outputs, labels)
 
                 loss_avg.add(loss.item(), inputs.size(0))
-                # print("Loss value is ",loss,"k is ",k,"Batch number is",i)
                 if loss.item() != loss.item():
                     self.logger.info("Loss is NaN!!!")
                 assert loss.item() == loss.item()  # Assert loss is not NaN
@@ -413,8 +403,8 @@ class NNTrainer:
             if verbose_freq and verbose_freq > 0 and (i % verbose_freq) == (verbose_freq - 1):
                 self.logger.info("Epoch " + str(self.epochs_trained + 1) + ", " + fwd_name + " set, " +
                                  "Iter " + str(i + 1) +
-                                 " current average loss " + str(loss_avg.avg) +
-                                 " current average acc " + str(acc_avg.avg) + "%")
+                                 " current average loss " + str(round(loss_avg.avg,4)) +
+                                 " current average acc " + str(round(acc_avg.avg,4)) + "%")
             # Record total minibatch time
             self.total_minibatch_time_avg[fwd_name].add(self.total_minibatch_time.get_time()
                                                         ) if self.total_minibatch_time is not None else None
@@ -429,8 +419,8 @@ class NNTrainer:
             if not training:
                 fwd_desc += " [" + inference_method + "]"
             self.logger.info("Stats for " + fwd_desc + " set of size " + str(set_size) + ", " +
-                             "loss is " + str(loss_avg.avg) + ", " +
-                             "acc is " + str(acc_avg.avg) + "%")
+                             "loss is " + str(round(loss_avg.avg,4)) + ", " +
+                             "acc is " + str(round(acc_avg.avg,4)) + "%")
 
         return loss_avg.avg, acc_avg.avg
 

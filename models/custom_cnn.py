@@ -10,12 +10,13 @@ class MNIST_CNN(nn.Module):
 
   Total Expected Params: 1,663,370
   """
-  def __init__(self,n_classes=10,n_tasks=3,**kwargs):
+  def __init__(self,**kwargs):
     super(MNIST_CNN, self).__init__()
 
-    self.num_classes = n_classes
-    self.num_tasks = n_tasks
     self.ds_idx = 0
+
+    self.num_of_datasets = kwargs.get("num_of_datasets", 3)
+    self.num_of_classes = kwargs.get("num_of_classes", 10)
 
     self.conv1 = nn.Conv2d(1, 32, kernel_size=5)
     self.conv2 = nn.Conv2d(32, 64, kernel_size=5)
@@ -25,10 +26,10 @@ class MNIST_CNN(nn.Module):
 
     self.fc1 = nn.Linear(1024, 512)
     # self.out = nn.Linear(512, 10)
-    self.last_layer = nn.ModuleList([nn.Linear(512,self.num_classes) for _ in range(self.num_tasks)])
+    self.last_layer = nn.ModuleList([nn.Linear(512,self.num_of_classes) for _ in range(self.num_of_datasets)])
 
   def set_dataset(self, ds_idx):
-    self.ds_idx = ds_idx % self.num_tasks
+    self.ds_idx = ds_idx % self.num_of_datasets
 
 
   def forward(self, x):
@@ -43,5 +44,5 @@ class MNIST_CNN(nn.Module):
     return out
   
 
-def custom_cnn(n_classes,n_tasks,**kwargs):
-  return MNIST_CNN(n_classes,n_tasks,**kwargs)
+def custom_cnn(**kwargs):
+  return MNIST_CNN(**kwargs)
