@@ -13,4 +13,19 @@ python main.py --logname continuous_permuted_mnist_3tasks --num_workers 1 --perm
 //
 This command is uses only map testing method
 
-python main.py --logname continuous_permuted_mnist_3tasks --num_workers 1 --permute_seed 2019 --seed 2019 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 3 - 1 )) --optimizer bgd --nn_arch custom_cnn --dataset ds_cont_permuted_mnist --num_epochs $(( 3 * 3)) --std_init 0.06 --batch_size 128 --results_dir res --train_mc_iters 10 --inference_map --desc BGD on continuous permuted mnist --labels_trick --separate_labels_space
+python main.py --logname continuous_permuted_mnist_3tasks --num_workers 1 --permute_seed 2019 --seed 2019 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 3 - 1 )) --optimizer bgd --nn_arch custom_cnn --dataset ds_cont_permuted_mnist --num_epochs $(( 10 * 3)) --std_init 0.06 --batch_size 128 --results_dir res --train_mc_iters 10 --inference_map
+
+
+//Same as above command with different network architecture
+python main.py --logname continuous_permuted_mnist_3tasks --num_workers 1 --permute_seed 2019 --seed 2019 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 3 - 1 )) --optimizer bgd --nn_arch mnist_simple_net_200width_domainlearning_1024input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 3 * 10)) --std_init 0.06 --batch_size 128 --results_dir res --train_mc_iters 10 --inference_map
+
+
+
+//Default settings command - No FL
+
+python main.py --logname continuous_permuted_mnist_10_tasks --num_workers 1 --permute_seed 2019 --seed 2019 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 10 - 1 )) --optimizer bgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 10 * 10)) --std_init 0.06 --batch_size 128 --results_dir perm_mnist_10_tasks_100_epochs --train_mc_iters 10 --inference_map
+
+
+//Default setting command - with FL
+
+python main.py --logname continuous_permuted_mnist_10_tasks --num_workers 1 --permute_seed 2019 --seed 2019 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 10 - 1 )) --optimizer bgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 10 * 10)) --std_init 0.06 --batch_size 128 --results_dir perm_mnist_10_tasks_100_epochs --train_mc_iters 10 --inference_map --federated_learning --n_clients 5

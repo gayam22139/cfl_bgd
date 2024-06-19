@@ -107,7 +107,6 @@ class NNTrainer:
         for epoch_number in range(self.epochs_trained, max_epoch):
             # Time recorders
             epoch_time = TimeRecorder()
-
             #####
             # Train
             #####
@@ -121,7 +120,6 @@ class NNTrainer:
             # Set current dataset
             if hasattr(get_model(self.net), "set_dataset"):
                 get_model(self.net).set_dataset(self.get_dataset_idx(max_epoch=max_epoch))
-                # breakpoint()
             train_loss, train_acc = self.forward(
                 data_loader=self.train_loader[self.get_dataset_idx(max_epoch=max_epoch)], training=True,
                 verbose_freq=verbose_freq)
@@ -164,7 +162,7 @@ class NNTrainer:
                                                                str(ds_idx), **probe_data)
                     self.logger.info("Average accuracy over all tasks for epoch number " + str(epoch_number + 1) +
                                      " for dataset idx " + str(ds_idx) + " using " + str(inference_method) + " is " +
-                                     str(avg_acc_over_tasks.avg))
+                                     str(round(avg_acc_over_tasks.avg,4)))
 
             if hasattr(get_model(self.net), "set_dataset"):
                 get_model(self.net).set_dataset(0)
@@ -256,7 +254,6 @@ class NNTrainer:
 
         for i, data in enumerate(data_loader, 0):
             self.total_minibatch_time.reset() if self.total_minibatch_time is not None else None
-
             # Get data
             inputs, labels = data
 
@@ -403,8 +400,8 @@ class NNTrainer:
             if verbose_freq and verbose_freq > 0 and (i % verbose_freq) == (verbose_freq - 1):
                 self.logger.info("Epoch " + str(self.epochs_trained + 1) + ", " + fwd_name + " set, " +
                                  "Iter " + str(i + 1) +
-                                 " current average loss " + str(round(loss_avg.avg,4)) +
-                                 " current average acc " + str(round(acc_avg.avg,4)) + "%")
+                                 " current average loss " + str(round(loss_avg.avg,4)))
+                                 
             # Record total minibatch time
             self.total_minibatch_time_avg[fwd_name].add(self.total_minibatch_time.get_time()
                                                         ) if self.total_minibatch_time is not None else None

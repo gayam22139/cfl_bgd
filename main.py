@@ -107,7 +107,9 @@ print("Dataset is ",args.dataset)
 
 
 # Dataset
-train_loaders, test_loaders = utils.datasets.__dict__[args.dataset](batch_size=args.batch_size,
+
+if not args.federated_learning:
+    train_loaders, test_loaders = utils.datasets.__dict__[args.dataset](batch_size=args.batch_size,
                                                                     num_workers=args.num_workers,
                                                                     permutations=all_permutation,
                                                                     separate_labels_space=args.separate_labels_space,
@@ -116,6 +118,19 @@ train_loaders, test_loaders = utils.datasets.__dict__[args.dataset](batch_size=a
                                                                     args.iterations_per_virtual_epc,
                                                                     contpermuted_beta=args.contpermuted_beta,
                                                                     logger=logger)
+
+else:
+    train_loaders, test_loaders = utils.datasets.__dict__[args.dataset](batch_size=args.batch_size,
+                                                                    num_workers=args.num_workers,
+                                                                    permutations=all_permutation,
+                                                                    separate_labels_space=args.separate_labels_space,
+                                                                    num_epochs=args.num_epochs,
+                                                                    iterations_per_virtual_epc=
+                                                                    args.iterations_per_virtual_epc,
+                                                                    contpermuted_beta=args.contpermuted_beta,
+                                                                    logger=logger,federated_learning = args.federated_learning,n_clients = args.n_clients)
+
+
 
 
 

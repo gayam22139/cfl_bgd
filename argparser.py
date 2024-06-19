@@ -112,6 +112,10 @@ def get_args():
     parser.add_argument('--permute_seed', type=int,
                         help='Seed for creating the permutations.')
     
+    parser.add_argument('--federated_learning',default=False,action='store_true',help='To enable federated learning(client-server style training)')
+
+    parser.add_argument('--n_clients',default = 5,type = int,help='Used to mention number of clients in federated learning setting')
+    
     args = parser.parse_args()
 
     return args

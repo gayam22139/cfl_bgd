@@ -36,7 +36,6 @@ class BGD(Optimizer):
         for group in self.param_groups:
             assert len(group["params"]) == 1, "BGD optimizer does not support multiple params in a group"
             # group['params'][0] is the weights
-            breakpoint()
             assert isinstance(group["params"][0], torch.Tensor), "BGD expect param to be a tensor"
             # We use the initialization of weights to initialize the mean.
             group["mean_param"] = group["params"][0].data.clone()

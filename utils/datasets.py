@@ -8,6 +8,7 @@ from torch.distributions.categorical import Categorical
 import torch.utils.data as data
 from PIL import Image
 import errno
+import time
 
 
 def _reduce_class(set, classes, train, preserve_label_space=True):
@@ -73,6 +74,92 @@ class Permutation(torch.utils.data.Dataset):
         return img, target
 
 
+def iid_partition(dataset, clients):
+  """
+  I.I.D paritioning of data over clients
+  Shuffle the data
+  Split it between clients
+  
+  params:
+    - dataset (torch.utils.Dataset): Dataset containing the MNIST Images
+    - clients (int): Number of Clients to split the data between
+
+  returns:
+    - Dictionary of image indexes for each client
+  """
+  x_train = dataset[0] 
+
+  num_items_per_client = int(len(x_train)/clients)
+  client_dict = {}
+  image_idxs = [i for i in range(len(x_train))]
+
+  for i in range(clients):
+    client_dict[i] = set(np.random.choice(image_idxs, num_items_per_client, replace=False))
+    image_idxs = list(set(image_idxs) - client_dict[i])
+
+  return client_dict 
+
+
+
+"""all_datasets - full_dataset,n_clients - number of clients to which this data has to be distributed"""
+
+"""Two ways of dividing the combined dataset
+-First way - Divide each task dataset among clients(using desired strategy - IID/Non-IID) one-by-one
+-Second way - Divide the combined dataset(treat all datapoints as a single dataset) among clients.(Here,the risk 
+associated is there can be a scenario where samples belonging to a particular task
+ do not go to a particular client)(Can this cause gradient shift?)"""
+
+def generate_client_datasets(tasks_datasets,n_clients = 5,alpha = None):
+    start_time = time.time()
+    print("Client Indices Generation starts")
+
+    n_tasks = len(tasks_datasets)
+    
+    clients_tasks_samples_indices = {client_id:[] for client_id in range(n_clients)}
+    
+    """client 0's tasks_samples_indices would be clients_tasks_samples_indices[0]
+    
+    Format of clients_tasks_samples_indices = {0:[[],[],[],[],....],1:[],2:[],....}
+    
+    """
+
+    for task_id in range(n_tasks):
+        dataset = tasks_datasets[task_id]
+
+        dataset_x = [dataset[i][0] for i in range(len(dataset))]
+        dataset_y = [dataset[i][1] for i in range(len(dataset))]    
+
+        dataset = [dataset_x,dataset_y]
+
+        client_dict = iid_partition(dataset,n_clients)
+
+        for client_id in client_dict.keys():
+            client_dict[client_id] = torch.tensor([len(dataset_x)*task_id+index for index in client_dict[client_id]])
+            clients_tasks_samples_indices[client_id].append(client_dict[client_id])
+
+    end_time = time.time()
+
+    print("Clients Indices Generation ends")
+    print("Client Indices Generation took",end_time-start_time,"seconds")
+
+    return clients_tasks_samples_indices
+
+def _create_probabilites_over_iterations(total_iters,total_datasets,beta):
+    tasks_probs_over_iterations = [_create_task_probs(total_iters, total_datasets, task_id,beta=beta) for task_id in range(total_datasets)]
+        
+    normalize_probs = torch.zeros_like(tasks_probs_over_iterations[0])
+    for probs in tasks_probs_over_iterations:
+        normalize_probs.add_(probs)
+    for probs in tasks_probs_over_iterations:
+        probs.div_(normalize_probs)
+    tasks_probs_over_iterations = torch.cat(tasks_probs_over_iterations).view(-1, tasks_probs_over_iterations[0].shape[0])
+    tasks_probs_over_iterations_lst = []
+    for col in range(tasks_probs_over_iterations.shape[1]):
+        tasks_probs_over_iterations_lst.append(tasks_probs_over_iterations[:, col])
+        
+    return tasks_probs_over_iterations_lst
+
+
 class DatasetsLoaders:
     def __init__(self, dataset, batch_size=4, num_workers=4, pin_memory=True, **kwargs):
         # print("kwargs in datasetloaders - ",kwargs)
@@ -86,6 +173,9 @@ class DatasetsLoaders:
         self.reduce_classes = kwargs.get("reduce_classes", None)
         self.permute = kwargs.get("permute", False)
         self.target_offset = kwargs.get("target_offset", 0)
+
+        self.federated_learning = kwargs.get("fl",False)
+        self.n_clients = kwargs.get("n_clients",5)
 
         pin_memory = pin_memory if torch.cuda.is_available() else False
         self.batch_size = batch_size
@@ -339,7 +429,6 @@ class DatasetsLoaders:
 
             # Original MNIST
             tasks_datasets = [torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)]
-            tasks_samples_indices = [torch.tensor(range(len(tasks_datasets[0])), dtype=torch.int32)]
             total_len = len(tasks_datasets[0])
             test_loaders = [torch.utils.data.DataLoader(torchvision.datasets.MNIST(root='./data', train=False,
                                                                                    download=True, transform=transform),
@@ -347,6 +436,7 @@ class DatasetsLoaders:
                                                         num_workers=self.num_workers, pin_memory=pin_memory)]
             self.num_of_permutations = len(kwargs.get("all_permutation"))
             all_permutation = kwargs.get("all_permutation", None)
+            tasks_samples_indices = [torch.tensor(range(len(tasks_datasets[0])), dtype=torch.int32)]
             for p_idx in range(self.num_of_permutations):
                 # Create permuation
                 permutation = all_permutation[p_idx]
@@ -356,7 +446,8 @@ class DatasetsLoaders:
                                                                              download=True, transform=transform),
                                                   permutation, target_offset=0))
 
-                tasks_samples_indices.append(torch.tensor(range(total_len,
+                if not self.federated_learning:
+                    tasks_samples_indices.append(torch.tensor(range(total_len,
                                                                 total_len + len(tasks_datasets[-1])
                                                                 ), dtype=torch.int32))
                 total_len += len(tasks_datasets[-1])
@@ -373,33 +464,58 @@ class DatasetsLoaders:
 
             assert total_iters is not None
             beta = kwargs.get("contpermuted_beta", 3)
+
             all_datasets = torch.utils.data.ConcatDataset(tasks_datasets)
 
-            # Create probabilities of tasks over iterations
-            self.tasks_probs_over_iterations = [_create_task_probs(total_iters, self.num_of_permutations+1, task_id,
-                                                                    beta=beta) for task_id in
-                                                 range(self.num_of_permutations+1)]
+            tasks_probs_over_iterations_lst = _create_probabilites_over_iterations(total_iters,self.num_of_permutations + 1,beta)
             
-            normalize_probs = torch.zeros_like(self.tasks_probs_over_iterations[0])
-            for probs in self.tasks_probs_over_iterations:
-                normalize_probs.add_(probs)
-            for probs in self.tasks_probs_over_iterations:
-                probs.div_(normalize_probs)
-            self.tasks_probs_over_iterations = torch.cat(self.tasks_probs_over_iterations).view(-1, self.tasks_probs_over_iterations[0].shape[0])
-            tasks_probs_over_iterations_lst = []
-            for col in range(self.tasks_probs_over_iterations.shape[1]):
-                tasks_probs_over_iterations_lst.append(self.tasks_probs_over_iterations[:, col])
             self.tasks_probs_over_iterations = tasks_probs_over_iterations_lst
 
-            train_sampler = ContinuousMultinomialSampler(data_source=all_datasets, samples_in_batch=self.batch_size,
-                                                         tasks_samples_indices=tasks_samples_indices,
-                                                         tasks_probs_over_iterations=
-                                                             self.tasks_probs_over_iterations,
-                                                         num_of_batches=kwargs.get("iterations_per_virtual_epc", 1))
-            self.train_loader = torch.utils.data.DataLoader(all_datasets, batch_size=self.batch_size,
-                                                            num_workers=self.num_workers, sampler=train_sampler, pin_memory=pin_memory)
-        
+            # Create probabilities of tasks over iterations
 
+
+            # self.tasks_probs_over_iterations = [_create_task_probs(total_iters, self.num_of_permutations+1, task_id,
+            #                                                         beta=beta) for task_id in
+            #                                      range(self.num_of_permutations+1)]
+            
+            # normalize_probs = torch.zeros_like(self.tasks_probs_over_iterations[0])
+            # for probs in self.tasks_probs_over_iterations:
+            #     normalize_probs.add_(probs)
+            # for probs in self.tasks_probs_over_iterations:
+            #     probs.div_(normalize_probs)
+            # self.tasks_probs_over_iterations = torch.cat(self.tasks_probs_over_iterations).view(-1, self.tasks_probs_over_iterations[0].shape[0])
+            
+            # tasks_probs_over_iterations_lst = []
+            # for col in range(self.tasks_probs_over_iterations.shape[1]):
+            #     tasks_probs_over_iterations_lst.append(self.tasks_probs_over_iterations[:, col])
+            
+            #We need to generate a client specific tasks_samples_indices object
+
+            if self.federated_learning:
+                clients_tasks_samples_indices = generate_client_datasets(tasks_datasets,self.n_clients)
+                self.client_train_loaders = []
+                for client_id in range(self.n_clients):
+                    client_train_sampler = ContinuousMultinomialSampler(data_source=all_datasets, samples_in_batch=self.batch_size,
+                                                            tasks_samples_indices=clients_tasks_samples_indices[client_id],
+                                                            tasks_probs_over_iterations=self.tasks_probs_over_iterations,
+                                                            num_of_batches=kwargs.get("iterations_per_virtual_epc", 1))
+                    
+                    train_loader = torch.utils.data.DataLoader(all_datasets,batch_size=self.batch_size,
+                                                               num_workers=self.num_workers,sampler=client_train_sampler,pin_memory=pin_memory)
+
+                    self.client_train_loaders.append(train_loader)
+            else:
+                train_sampler = ContinuousMultinomialSampler(data_source=all_datasets, samples_in_batch=self.batch_size,
+                                                            tasks_samples_indices=tasks_samples_indices,
+                                                            tasks_probs_over_iterations=
+                                                                self.tasks_probs_over_iterations,
+                                                            num_of_batches=kwargs.get("iterations_per_virtual_epc", 1))
+                
+                self.train_loader = torch.utils.data.DataLoader(all_datasets, batch_size=self.batch_size,
+                                                            num_workers=self.num_workers, sampler=train_sampler, pin_memory=pin_memory)
+                
+
+         
 class ContinuousMultinomialSampler(torch.utils.data.Sampler):
     r"""Samples elements randomly. If without replacement, then sample from a shuffled dataset.
     If with replacement, then user can specify ``num_samples`` to draw.
@@ -440,7 +556,7 @@ class ContinuousMultinomialSampler(torch.utils.data.Sampler):
         if not isinstance(self.samples_in_batch, int) or self.samples_in_batch <= 0:
             raise ValueError("num_samples should be a positive integeral "
                              "value, but got num_samples={}".format(self.samples_in_batch))
-
+    
     def generate_iters_indices(self, num_of_iters):
         from_iter = len(self.iter_indices_per_iteration)
         for iter_num in range(from_iter, from_iter+num_of_iters):
@@ -679,38 +795,6 @@ class NOTMNIST(data.Dataset):
 ###########################################################################
 # Callable datasets
 ###########################################################################
-
-def ds_mnist(**kwargs):
-    """
-    MNIST dataset.
-    :param batch_size: batch size
-           num_workers: num of workers
-           pad_to_32: If true, will pad digits to size 32x32 and normalize to zero mean and unit variance.
-    :return: Tuple with two lists.
-             First list of the tuple is a list of 1 train loaders.
-             Second list of the tuple is a list of 1 test loaders.
-    """
-    dataset = [DatasetsLoaders("MNIST", batch_size=kwargs.get("batch_size", 128),
-                               num_workers=kwargs.get("num_workers", 1),
-                               pad_to_32=kwargs.get("pad_to_32", False))]
-    
-    dataset_obj = dataset[0]
-    
-    print(dataset)
-
-    print("I am here")
-
-    test_loaders = [ds.test_loader for ds in dataset]
-    train_loaders = [ds.train_loader for ds in dataset]
-
-    print(len(train_loaders))
-    print(len(test_loaders))
-
-    print("Train and test loaders")
-
-    return train_loaders, test_loaders
-
-
 def ds_split_mnist(**kwargs):
     """
     Split MNIST dataset. Consists of 5 tasks: digits 0 & 1, 2 & 3, 4 & 5, 6 & 7, and 8 & 9.
@@ -867,6 +951,8 @@ def ds_padded_cont_permuted_mnist(**kwargs):
 
     return train_loaders, test_loaders
 
+
+#Customizing below method to include federated learning setting as we
 #Same as the above method,only thing being padded has been removed and image size would be 28x28 only.
 def ds_cont_permuted_mnist(**kwargs):
     """
@@ -895,12 +981,16 @@ def ds_cont_permuted_mnist(**kwargs):
                                total_iters=(kwargs.get("num_epochs")*kwargs.get("iterations_per_virtual_epc")),
                                contpermuted_beta=kwargs.get("contpermuted_beta"),
                                iterations_per_virtual_epc=kwargs.get("iterations_per_virtual_epc"),
-                               all_permutation=kwargs.get("permutations", []))]
+                               all_permutation=kwargs.get("permutations", []),fl=kwargs.get("federated_learning",False),n_clients=kwargs.get("n_clients",5))]
+    
     test_loaders = [tloader for ds in dataset for tloader in ds.test_loader]
-    train_loaders = [ds.train_loader for ds in dataset]
+    
+    if kwargs.get("federated_learning",False):
+        train_loaders = dataset[0].client_train_loaders
+    else:
+        train_loaders = [ds.train_loader for ds in dataset]
 
     return train_loaders, test_loaders
-
 
 
 def ds_visionmix(**kwargs):
