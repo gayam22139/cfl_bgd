@@ -14,6 +14,7 @@ import socket
 from ast import literal_eval
 from nn_utils.init_utils import init_model
 import optimizers_lib
+import copy
 
 
 #Arguments have been moved to a different file named argparser.py
@@ -106,18 +107,248 @@ lastlogs_logger = None
 print("Dataset is ",args.dataset)
 
 
+def agg_client_models(client_models,client_optimizers):
+
+    #server_model = client_models[0].named_parameters()
+
+    # print(dir(client_models[0]))
+    # print(dir(client_optimizers[0]))
+
+    print("-------OPTIMIZER FROM HERE-----")
+
+    model_params = {}
+
+    total_clients = len(client_optimizers.keys())
+
+    for client_id in client_optimizers.keys():
+    
+        for layer_id,layer in enumerate(client_optimizers[client_id].param_groups):
+
+            if client_id == 0:
+                model_params[layer_id] = {}
+                model_params[layer_id]['mean_param'] = torch.div(layer['mean_param'],total_clients)
+                model_params[layer_id]['std_param'] = torch.div(layer['std_param'],total_clients)
+            
+            else:
+                model_params[layer_id]['mean_param'].add_(torch.div(layer['mean_param'],total_clients))
+                model_params[layer_id]['std_param'].add_(torch.div(layer['std_param'],total_clients))
+
+
+    for layer_id in model_params.keys():
+        model_params[layer_id]['eps'] = torch.normal(torch.zeros_like(model_params[layer_id]['std_param']), 1)
+        model_params[layer_id]['params'] = model_params[layer_id]['mean_param'].add(model_params[layer_id]['eps'].mul(model_params[layer_id]['std_param']))
+
+
+    model_params_lst = [layer_weights['params'] for layer_id,layer_weights in model_params.items()]
+
+    print(model_params_lst,len(model_params_lst))
+
+
+    agg_model = copy.deepcopy(client_models[0])
+
+    agg_model_state_dict = {}
+
+
+    # print(client_models[0].state_dict())
+    # print("Length of model state dict is ",len(client_models[0].state_dict()))
+    # print(dir(client_models[0]))
+
+    layer_id = 0
+    for layer in agg_model.state_dict().keys():
+        # print("Model stats")
+        # print(type(client_models[0].state_dict()[layer]))
+        # print(client_models[0].state_dict()[layer].shape) 
+
+        agg_model_state_dict[layer] = model_params_lst[layer_id]
+        layer_id+=1
+
+        # print("Our lst stats")
+        # print(type(model_params_lst[layer_id]))
+        # print(model_params_lst[layer_id].shape)
+        # layer_id+=1
+    
+    # print(agg_model_state_dict)
+
+    # print(agg_model)
+
+    agg_model.load_state_dict(agg_model_state_dict)
+
+
+    return agg_model
+
+def test_agg_model(server_model,test_loaders):
+ 
+    # criterion = nn.CrossEntropyLoss()
+
+    # test_accuracies = []
+    # test_losses = []
+
+    # for test_loader in test_loader:
+    #     total_loss = 0
+    #     accuracy = 0
+    #     total_batches = 0
+        
+    #     for data in test_loader:
+    #         inputs,labels = data
+    #         inputs,labels = inputs.cuda(),labels.cuda()
+
+    #         outputs = server_model(inputs)
+    #         loss = criterion(outputs,labels)
+    #         _, predicted = torch.max(outputs.data, 1)
+    #         total += labels.size(0)
+    #         correct += (predicted == labels).sum().item()
+    #         total_loss += loss.item()
+    #         total_batches+=1
+            
+    #     accuracy += correct / total
+    #     total_loss = total_loss/total_batches
+    #     test_accuracies.append(accuracy)
+    #     test_losses.append(total_loss)
+
+    # avg_acc = sum(test_accuracies)/len(test_accuracies)
+    # avg_loss = sum(test_losses)/len(test_losses)
+    # return avg_acc,avg_loss
+
+    return 0.4,0.34
+
+
 # Dataset
 
-if not args.federated_learning:
-    train_loaders, test_loaders = utils.datasets.__dict__[args.dataset](batch_size=args.batch_size,
-                                                                    num_workers=args.num_workers,
-                                                                    permutations=all_permutation,
-                                                                    separate_labels_space=args.separate_labels_space,
-                                                                    num_epochs=args.num_epochs,
-                                                                    iterations_per_virtual_epc=
-                                                                    args.iterations_per_virtual_epc,
-                                                                    contpermuted_beta=args.contpermuted_beta,
-                                                                    logger=logger)
+if args.federated_learning:
+    client_train_loaders, test_loaders = utils.datasets.__dict__[args.dataset](batch_size=args.batch_size,
+                                                                        num_workers=args.num_workers,
+                                                                        permutations=all_permutation,
+                                                                        separate_labels_space=args.separate_labels_space,
+                                                                        num_epochs=args.num_epochs,
+                                                                        iterations_per_virtual_epc=
+                                                                        args.iterations_per_virtual_epc,
+                                                                        contpermuted_beta=args.contpermuted_beta,
+                                                                        logger=logger,federated_learning = args.federated_learning,n_clients = args.n_clients)
+
+
+    #Modify below code as per Federated requirements
+
+    #Probes manager
+
+    server_model = None
+    client_models = {client_id:None for client_id in range(args.n_clients)}
+    client_probes_managers = {client_id:None for client_id in range(args.n_clients)}
+    client_trainers = {client_id:None for client_id in range(args.n_clients)}
+    client_optimizers = {client_id:None for client_id in range(args.n_clients)}
+    client_max_epoch_counter = {client_id:1 for client_id in range(args.n_clients)}
+
+    total_rounds = args.num_of_permutations + 1
+
+    optimizer_model = optimizers_lib.__dict__[args.optimizer]
+    optimizer_params = dict({"logger": logger,
+                                        "mean_eta": args.mean_eta,
+                                        "std_init": args.std_init,
+                                        "mc_iters": args.train_mc_iters}, **literal_eval(" ".join(args.optimizer_params)))
+
+    probes_manager = ProbesManager()
+    server_model = models.__dict__[args.nn_arch](probes_manager=probes_manager)
+
+    if torch.cuda.is_available():
+        server_model = torch.nn.DataParallel(server_model).cuda()
+        logger.info("Transformed model to CUDA")
+
+    criterion = nn.CrossEntropyLoss()
+
+    init_params = {"logger": logger}
+    if args.init_params != "":
+        init_params = dict(init_params, **literal_eval(" ".join(args.init_params)))
+
+    init_model(get_model(server_model), **init_params)
+
+    # optimizer model
+    optimizer = optimizer_model(server_model, probes_manager=probes_manager, **optimizer_params)
+
+    for round_no in range(total_rounds):
+
+        for client_id in range(args.n_clients):
+            # Model
+            if client_models[client_id] == None and round_no == 0:
+                # probes_manager = ProbesManager()
+                # model = models.__dict__[args.nn_arch](probes_manager=probes_manager)
+
+                # if torch.cuda.is_available():
+                #     model = torch.nn.DataParallel(model).cuda()
+                #     logger.info("Transformed model to CUDA")
+
+                # criterion = nn.CrossEntropyLoss()
+
+                # init_params = {"logger": logger}
+                # if args.init_params != "":
+                #     init_params = dict(init_params, **literal_eval(" ".join(args.init_params)))
+
+                # init_model(get_model(model), **init_params)
+
+                # # optimizer model
+                # optimizer = optimizer_model(model, probes_manager=probes_manager, **optimizer_params)
+
+            # print(dir(optimizer))
+            # print(optimizer.param_groups)
+            # print(optimizer.param_groups.keys())    
+                current_client_trainer = NNTrainer(train_loader=[client_train_loaders[client_id]], test_loader=test_loaders,
+                                    criterion=criterion, net=copy.deepcopy(server_model), logger=logger, probes_manager=copy.deepcopy(probes_manager),
+                                    std_init=args.std_init, mean_eta=args.mean_eta, train_mc_iters=args.train_mc_iters,
+                                    test_mc_iters=args.test_mc_iters, committee_size=args.committee_size, batch_size=args.batch_size,
+                                    inference_methods=inference_methods,
+                                    pruning_percents=args.pruning_percents,
+                                    bw_to_rgb=args.bw_to_rgb,
+                                    labels_trick=args.labels_trick,
+                                    test_freq=args.test_freq,
+                                    optimizer=copy.deepcopy(optimizer))
+
+                current_client_trainer.net = copy.deepcopy(server_model)
+                #current_client_trainer.net = copy.deepcopy(server_model)
+                current_client_trainer.optimizer = optimizer_model(current_client_trainer.net, probes_manager=current_client_trainer.probes_manager, **optimizer_params)
+
+            #Update the model in the trainer object
+            else:
+                current_client_trainer = client_trainers[client_id]
+                current_client_trainer.net = copy.deepcopy(server_model)
+                #current_client_trainer.net = copy.deepcopy(server_model)
+                current_client_trainer.optimizer = optimizer_model(current_client_trainer.net, probes_manager=current_client_trainer.probes_manager, **optimizer_params)
+                
+            """In federated setting the number of epochs is always 1,as we consider all iterations as 
+                one big epoch(flattened all iterations over all epochs as a single epoch)"""
+
+            if round_no > 0:
+                current_client_trainer.train_epochs(verbose_freq=500, max_epoch=client_max_epoch_counter[client_id],
+                                permanent_prune_on_epoch=args.permanent_prune_on_epoch,
+                                permanent_prune_on_epoch_percent=args.permanent_prune_on_epoch_percent,federated_learning=args.federated_learning,client_id = client_id,round = round_no)
+            
+            # print(dir(trainer))
+            # print(dir(trainer.train_loader[0]))
+            # print(trainer.train_loader[0].sampler)
+            # print(dir(trainer.train_loader[0].sampler))
+            # print(trainer.train_loader[0].sampler.current_iteration)
+            # exit()
+
+            client_trainers[client_id] = current_client_trainer
+            client_models[client_id] = current_client_trainer.net
+            client_optimizers[client_id] = current_client_trainer.optimizer
+
+            client_max_epoch_counter[client_id]+=1
+
+            print(f"Round - {round_no+1},Client - {client_id+1}")
+            print(f"{current_client_trainer.train_loader[0].sampler.current_iteration},",
+                  f"{current_client_trainer.train_loader[0].sampler.current_round_start_iter},",
+                  f"{current_client_trainer.train_loader[0].sampler.current_round_end_iter}")
+        
+        
+        server_model = agg_client_models(client_models,client_optimizers)
+        total = 0
+        with torch.no_grad():
+            for layer in server_model.parameters():
+                total+=torch.sum(layer)
+        print(f"Value of server model at round {round_no+1} is {total.item()}")
+        print("Agg model avg acc and loss",test_agg_model(server_model,test_loaders))
+        
+        print(f"Round - {round_no+1} complete")
+
+    print("Done - Federated Learning Setup")
 
 else:
     train_loaders, test_loaders = utils.datasets.__dict__[args.dataset](batch_size=args.batch_size,
@@ -128,53 +359,52 @@ else:
                                                                     iterations_per_virtual_epc=
                                                                     args.iterations_per_virtual_epc,
                                                                     contpermuted_beta=args.contpermuted_beta,
-                                                                    logger=logger,federated_learning = args.federated_learning,n_clients = args.n_clients)
+                                                                    logger=logger)
+
+    # Probes manager
+    probes_manager = ProbesManager()
+
+    # Model
+    model = models.__dict__[args.nn_arch](probes_manager=probes_manager)
+
+    if torch.cuda.is_available():
+        model = torch.nn.DataParallel(model).cuda()
+        logger.info("Transformed model to CUDA")
+
+    criterion = nn.CrossEntropyLoss()
+
+    init_params = {"logger": logger}
+    if args.init_params != "":
+        init_params = dict(init_params, **literal_eval(" ".join(args.init_params)))
+
+    init_model(get_model(model), **init_params)
+
+    # optimizer model
+    optimizer_model = optimizers_lib.__dict__[args.optimizer]
+    optimizer_params = dict({"logger": logger,
+                            "mean_eta": args.mean_eta,
+                            "std_init": args.std_init,
+                            "mc_iters": args.train_mc_iters}, **literal_eval(" ".join(args.optimizer_params)))
+
+    optimizer = optimizer_model(model, probes_manager=probes_manager, **optimizer_params)
+
+    trainer = NNTrainer(train_loader=train_loaders, test_loader=test_loaders,
+                        criterion=criterion, net=model, logger=logger, probes_manager=probes_manager,
+                        std_init=args.std_init, mean_eta=args.mean_eta, train_mc_iters=args.train_mc_iters,
+                        test_mc_iters=args.test_mc_iters, committee_size=args.committee_size, batch_size=args.batch_size,
+                        inference_methods=inference_methods,
+                        pruning_percents=args.pruning_percents,
+                        bw_to_rgb=args.bw_to_rgb,
+                        labels_trick=args.labels_trick,
+                        test_freq=args.test_freq,
+                        optimizer=optimizer)
 
 
+    trainer.train_epochs(verbose_freq=100, max_epoch=args.num_epochs,
+                        permanent_prune_on_epoch=args.permanent_prune_on_epoch,
+                        permanent_prune_on_epoch_percent=args.permanent_prune_on_epoch_percent)
+
+    # print(trainer.optimizer.param_groups)
 
 
-
-# Probes manager
-probes_manager = ProbesManager()
-
-# Model
-model = models.__dict__[args.nn_arch](probes_manager=probes_manager)
-
-if torch.cuda.is_available():
-    model = torch.nn.DataParallel(model).cuda()
-    logger.info("Transformed model to CUDA")
-
-criterion = nn.CrossEntropyLoss()
-
-init_params = {"logger": logger}
-if args.init_params != "":
-    init_params = dict(init_params, **literal_eval(" ".join(args.init_params)))
-
-init_model(get_model(model), **init_params)
-
-# optimizer model
-optimizer_model = optimizers_lib.__dict__[args.optimizer]
-optimizer_params = dict({"logger": logger,
-                         "mean_eta": args.mean_eta,
-                         "std_init": args.std_init,
-                         "mc_iters": args.train_mc_iters}, **literal_eval(" ".join(args.optimizer_params)))
-optimizer = optimizer_model(model, probes_manager=probes_manager, **optimizer_params)
-
-trainer = NNTrainer(train_loader=train_loaders, test_loader=test_loaders,
-                    criterion=criterion, net=model, logger=logger, probes_manager=probes_manager,
-                    std_init=args.std_init, mean_eta=args.mean_eta, train_mc_iters=args.train_mc_iters,
-                    test_mc_iters=args.test_mc_iters, committee_size=args.committee_size, batch_size=args.batch_size,
-                    inference_methods=inference_methods,
-                    pruning_percents=args.pruning_percents,
-                    bw_to_rgb=args.bw_to_rgb,
-                    labels_trick=args.labels_trick,
-                    test_freq=args.test_freq,
-                    optimizer=optimizer)
-
-
-trainer.train_epochs(verbose_freq=100, max_epoch=args.num_epochs,
-                     permanent_prune_on_epoch=args.permanent_prune_on_epoch,
-                     permanent_prune_on_epoch_percent=args.permanent_prune_on_epoch_percent)
-
-
-print("Done")
+    print("Done")

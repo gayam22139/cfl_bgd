@@ -1,0 +1,39 @@
+Firstly train 5 client models for some number of epochs(i.e. some number of iterations)
+this point would mark the end of a round.Here,we combine the 5 models
+and repeat this thing till all the iterations are complete.
+
+Important things to be kept in mind
+-Where to mark(the iteration number of round 1 end) the end of a round.
+-Combine these 5 models to get a single model.
+-Propogate this agg. model to all the clients and continue training
+from the next iteration.
+
+-Every client model will have its own optimizer,own criterion object and others.
+
+
+After an iteration the model's param,mean_param,std_param get updated.(param will be equal to mean_param)
+
+
+#The model trained parameters,mean,std can be accessed using trainer.optimizer.param_groups this is a list of dictionaries(layers)
+where each layer's dict has keys params,mean_param,std_param etc.
+
+
+
+
+Points to check next
+
+-Check if the the sampler in the train_loader is at correct iteration after every round
+-Check if the aggregated model is correctly reflected at each client in the next round
+
+-Before round 1 also,initialize model once a give its copy to all the clients
+
+
+#Fully working command
+
+python main.py --logname continuous_permuted_mnist_10_tasks --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 3 - 1 )) --optimizer bgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 3 * 3)) --std_init 0.06 --batch_size 128 --results_dir perm_mnist_10_tasks_100_epochs --train_mc_iters 10 --inference_map --federated_learning --n_clients 5 --mean_eta 0.001
+
+
+
+-Next steps to avoid nan loss
+-Try batch normalisation
+-Try leaky relu activation function

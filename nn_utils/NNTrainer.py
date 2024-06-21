@@ -102,7 +102,34 @@ class NNTrainer:
         if self.epochs_trained >= max_epoch:
             return False
 
-        self.logger.info("Running training from epoch " + str(self.epochs_trained + 1) + " to epoch " + str(max_epoch))
+        if not kwargs.get("federated_learning",False):
+            self.logger.info("Running training from epoch " + str(self.epochs_trained + 1) + " to epoch " + str(max_epoch))
+
+        print("Model id is ",id(self.net))
+
+        #Verify current model and current optimizer
+
+        # current_model_params = {id(param) for param in self.net.parameters()}
+        # current_optimizer_params = {id(param) for group in self.optimizer.param_groups for param in group['params']}
+
+        # if current_model_params == current_optimizer_params:
+        #     print("Model and Optimizer are in sync perfectly")
+        
+        # else:
+        #     print("Check the difference")
+        #     print(current_model_params)
+        #     print(current_optimizer_params)
+
+        #After running the above commented code we came to a conclusion that both model and optimizer are in perfect sync
+
+        
+        if kwargs.get("federated_learning",False):
+            total = 0
+            with torch.no_grad():
+                for layer in self.net.parameters():
+                    total+=torch.sum(layer)
+            
+            print(f"Model value at client {kwargs.get('client_id',None) + 1} is ",total.item(),f" in round {kwargs.get("round",None) + 1}")
 
         for epoch_number in range(self.epochs_trained, max_epoch):
             # Time recorders
@@ -122,7 +149,7 @@ class NNTrainer:
                 get_model(self.net).set_dataset(self.get_dataset_idx(max_epoch=max_epoch))
             train_loss, train_acc = self.forward(
                 data_loader=self.train_loader[self.get_dataset_idx(max_epoch=max_epoch)], training=True,
-                verbose_freq=verbose_freq)
+                verbose_freq=verbose_freq,client_id = kwargs.get("client_id",None))
             if self.save_stats_on_epoch(epoch_number, max_epoch):
                 probe_data = {"train_loss": train_loss,
                               "train_acc": train_acc,
@@ -238,7 +265,7 @@ class NNTrainer:
         self.net.eval()
         self.probes_manager.eval()
 
-    def forward(self, data_loader=None, verbose_freq=2000, training=True, inference_method="test_mc"):
+    def forward(self, data_loader=None, verbose_freq=2000, training=True, inference_method="test_mc",client_id = None):
         if training:
             self.train_mode()
             fwd_name = "train"
@@ -398,7 +425,12 @@ class NNTrainer:
 
             # Print statistics
             if verbose_freq and verbose_freq > 0 and (i % verbose_freq) == (verbose_freq - 1):
-                self.logger.info("Epoch " + str(self.epochs_trained + 1) + ", " + fwd_name + " set, " +
+                if client_id != None:
+                    self.logger.info("Client id "+str(client_id) + ", " +"Epoch " + str(self.epochs_trained + 1) + ", " + fwd_name + " set, " +
+                                 "Iter " + str(i + 1) +
+                                 " current average loss " + str(round(loss_avg.avg,4)))
+                else:
+                    self.logger.info("Epoch " + str(self.epochs_trained + 1) + ", " + fwd_name + " set, " +
                                  "Iter " + str(i + 1) +
                                  " current average loss " + str(round(loss_avg.avg,4)))
                                  

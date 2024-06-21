@@ -145,7 +145,7 @@ def generate_client_datasets(tasks_datasets,n_clients = 5,alpha = None):
     return clients_tasks_samples_indices
 
 def _create_probabilites_over_iterations(total_iters,total_datasets,beta):
-    tasks_probs_over_iterations = [_create_task_probs(total_iters, total_datasets, task_id,beta=beta) for task_id in range(total_datasets)]
+    tasks_probs_over_iterations = [_create_task_probs(total_iters, total_datasets, task_id,beta=beta)[0] for task_id in range(total_datasets)]
         
     normalize_probs = torch.zeros_like(tasks_probs_over_iterations[0])
     for probs in tasks_probs_over_iterations:
@@ -471,34 +471,25 @@ class DatasetsLoaders:
             
             self.tasks_probs_over_iterations = tasks_probs_over_iterations_lst
 
+            #print(len(self.tasks_probs_over_iterations),self.tasks_probs_over_iterations[5800])
+
             # Create probabilities of tasks over iterations
 
-
-            # self.tasks_probs_over_iterations = [_create_task_probs(total_iters, self.num_of_permutations+1, task_id,
-            #                                                         beta=beta) for task_id in
-            #                                      range(self.num_of_permutations+1)]
-            
-            # normalize_probs = torch.zeros_like(self.tasks_probs_over_iterations[0])
-            # for probs in self.tasks_probs_over_iterations:
-            #     normalize_probs.add_(probs)
-            # for probs in self.tasks_probs_over_iterations:
-            #     probs.div_(normalize_probs)
-            # self.tasks_probs_over_iterations = torch.cat(self.tasks_probs_over_iterations).view(-1, self.tasks_probs_over_iterations[0].shape[0])
-            
-            # tasks_probs_over_iterations_lst = []
-            # for col in range(self.tasks_probs_over_iterations.shape[1]):
-            #     tasks_probs_over_iterations_lst.append(self.tasks_probs_over_iterations[:, col])
-            
             #We need to generate a client specific tasks_samples_indices object
 
             if self.federated_learning:
+                round_end_iters = [_create_task_probs(total_iters,self.num_of_permutations+1,task_id,beta)[1]
+                                    for task_id in range(self.num_of_permutations+1)]
+
+                print(round_end_iters)
+
                 clients_tasks_samples_indices = generate_client_datasets(tasks_datasets,self.n_clients)
                 self.client_train_loaders = []
                 for client_id in range(self.n_clients):
-                    client_train_sampler = ContinuousMultinomialSampler(data_source=all_datasets, samples_in_batch=self.batch_size,
+                    client_train_sampler = FederatedContinuousMultinomialSampler(data_source=all_datasets, samples_in_batch=self.batch_size,
                                                             tasks_samples_indices=clients_tasks_samples_indices[client_id],
                                                             tasks_probs_over_iterations=self.tasks_probs_over_iterations,
-                                                            num_of_batches=kwargs.get("iterations_per_virtual_epc", 1))
+                                                            round_end_iter_lst=round_end_iters)
                     
                     train_loader = torch.utils.data.DataLoader(all_datasets,batch_size=self.batch_size,
                                                                num_workers=self.num_workers,sampler=client_train_sampler,pin_memory=pin_memory)
@@ -586,6 +577,91 @@ class ContinuousMultinomialSampler(torch.utils.data.Sampler):
         return len(self.samples_in_batch)
 
 
+class FederatedContinuousMultinomialSampler(torch.utils.data.Sampler):
+    r"""Samples elements randomly. If without replacement, then sample from a shuffled dataset.
+    If with replacement, then user can specify ``num_samples`` to draw.
+    self.tasks_probs_over_iterations is the probabilities of tasks over iterations.
+    self.samples_distribution_over_time is the actual distribution of samples over iterations
+                                            (the result of sampling from self.tasks_probs_over_iterations).
+    Arguments:
+        data_source (Dataset): dataset to sample from
+        num_samples (int): number of samples to draw, default=len(dataset)
+        replacement (bool): samples are drawn with replacement if ``True``, default=False
+    """
+
+    def __init__(self, data_source,round_end_iter_lst, samples_in_batch=128, tasks_samples_indices=None,
+                 tasks_probs_over_iterations=None):
+        self.data_source = data_source
+        assert tasks_samples_indices is not None, "Must provide tasks_samples_indices - a list of tensors," \
+                                                  "each item in the list corrosponds to a task, each item of the " \
+                                                  "tensor corrosponds to index of sample of this task"
+        self.tasks_samples_indices = tasks_samples_indices
+        self.num_of_tasks = len(self.tasks_samples_indices)
+        assert tasks_probs_over_iterations is not None, "Must provide tasks_probs_over_iterations - a list of " \
+                                                         "probs per iteration"
+        assert all([isinstance(probs, torch.Tensor) and len(probs) == self.num_of_tasks for
+                    probs in tasks_probs_over_iterations]), "All probs must be tensors of len" \
+                                                              + str(self.num_of_tasks) + ", first tensor type is " \
+                                                              + str(type(tasks_probs_over_iterations[0])) + ", and " \
+                                                              " len is " + str(len(tasks_probs_over_iterations[0]))
+        self.tasks_probs_over_iterations = tasks_probs_over_iterations
+        self.current_iteration = 0
+
+        self.samples_in_batch = samples_in_batch
+        self.round_end_iter_lst = round_end_iter_lst
+
+        self.from_iter = 0
+        self.to_iter_idx = 0
+
+        self.current_round_start_iter = 0
+        self.current_round_end_iter = self.round_end_iter_lst[self.to_iter_idx]
+
+        # Create the samples_distribution_over_time
+        self.samples_distribution_over_time = [[] for _ in range(self.num_of_tasks)]
+        self.iter_indices_per_iteration = []
+
+        if not isinstance(self.samples_in_batch, int) or self.samples_in_batch <= 0:
+            raise ValueError("num_samples should be a positive integeral "
+                             "value, but got num_samples={}".format(self.samples_in_batch))
+    
+    def generate_iters_indices(self, from_iter,to_iter):
+        # from_iter = len(self.iter_indices_per_iteration)
+        for iter_num in range(from_iter, to_iter):
+
+            # Get random number of samples per task (according to iteration distribution)
+            tsks = Categorical(probs=self.tasks_probs_over_iterations[iter_num]).sample(torch.Size([self.samples_in_batch]))
+            # Generate samples indices for iter_num
+            iter_indices = torch.zeros(0, dtype=torch.int32)
+            for task_idx in range(self.num_of_tasks):
+                if self.tasks_probs_over_iterations[iter_num][task_idx] > 0:
+                    num_samples_from_task = (tsks == task_idx).sum().item()
+                    self.samples_distribution_over_time[task_idx].append(num_samples_from_task)
+                    # Randomize indices for each task (to allow creation of random task batch)
+                    tasks_inner_permute = np.random.permutation(len(self.tasks_samples_indices[task_idx]))
+                    rand_indices_of_task = tasks_inner_permute[:num_samples_from_task]
+                    iter_indices = torch.cat([iter_indices, self.tasks_samples_indices[task_idx][rand_indices_of_task]])
+                else:
+                    self.samples_distribution_over_time[task_idx].append(0)
+            self.iter_indices_per_iteration.append(iter_indices.tolist())
+
+    def __iter__(self):
+        self.generate_iters_indices(self.from_iter,self.round_end_iter_lst[self.to_iter_idx])
+
+        self.current_round_start_iter = self.from_iter
+        self.current_round_end_iter = self.round_end_iter_lst[self.to_iter_idx]
+
+        self.from_iter = self.round_end_iter_lst[self.to_iter_idx]
+        self.to_iter_idx+=1
+
+        self.current_iteration = self.from_iter
+
+        return iter([item for sublist in 
+                     self.iter_indices_per_iteration[self.current_round_start_iter:self.current_round_end_iter] for item in sublist])
+
+    def __len__(self):
+        return (self.current_round_end_iter - self.current_round_start_iter)*(self.samples_in_batch)
+
+
 def _get_linear_line(start, end, direction="up"):
     if direction == "up":
         return torch.FloatTensor([(i - start)/(end-start) for i in range(start, end)])
@@ -617,10 +693,10 @@ def _create_task_probs(iters, tasks, task_id, beta=3):
     else:
         probs[peak_end:end] = _get_linear_line(peak_end, end, direction="down")
     
-    with open('probs.txt','w') as f:
-        f.write(str(probs.numpy().tolist()))
+    # with open('probs.txt','w') as f:
+    #     f.write(str(probs.numpy().tolist()))
 
-    return probs
+    return probs,end
 
 
 ###
