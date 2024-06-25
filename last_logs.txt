@@ -112,3 +112,12 @@
 ./logs/perm_mnist_10_tasks_100_epochs/continuous_permuted_mnist_10_tasks-06-21_17-28-08 
 ./logs/perm_mnist_10_tasks_100_epochs/continuous_permuted_mnist_10_tasks-06-21_17-30-26 
 ./logs/perm_mnist_10_tasks_100_epochs/continuous_permuted_mnist_10_tasks-06-21_17-32-00 
+./logs/perm_mnist_10_tasks_100_epochs/continuous_permuted_mnist_10_tasks-06-25_12-01-09 
+./logs/perm_mnist_10_tasks_100_epochs/continuous_permuted_mnist_10_tasks-06-25_12-03-39 
+./logs/perm_mnist_3_9_0.01_4_17:59_25-06-2024/continuous_permuted_mnist_10_tasks-06-25_12-29-02 
+./logs/perm_mnist_10_tasks_100_epochs_0.01_lr_4_beta_with_grad_clip_18:34_25-06-2024/continous_permuted_mnist_10_tasks-06-25_13-04-42 
+./logs/perm_mnist_10_tasks_100_epochs_0.1_lr_4_beta_with_grad_clip_18:36_25-06-2024/continous_permuted_mnist_10_tasks-06-25_13-06-18 
+./logs/perm_mnist_10_tasks_100_epochs_1.0_lr_4_beta_with_grad_clip_18:37_25-06-2024/continous_permuted_mnist_10_tasks-06-25_13-07-09 
+./logs/perm_mnist_10_tasks_100_epochs_1.0_lr_4_beta_18:44_25-06-2024/continous_permuted_mnist_10_tasks-06-25_13-14-36 
+./logs/perm_mnist_10_tasks_100_epochs_0.1_lr_4_beta_18:45_25-06-2024/continous_permuted_mnist_10_tasks-06-25_13-15-06 
+./logs/perm_mnist_10_tasks_100_epochs_0.01_lr_4_beta_18:45_25-06-2024/continous_permuted_mnist_10_tasks-06-25_13-15-56 

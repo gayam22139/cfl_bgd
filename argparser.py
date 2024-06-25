@@ -25,7 +25,7 @@ def get_args():
                         help='The name of the dataset to train. [Default: ds_mnist]')
     parser.add_argument('--nn_arch', type=str, required=True, choices=archs_names,
                         help='Neural network architecture')
-    parser.add_argument('--logname', type=str, required=True,
+    parser.add_argument('--logname', type=str, required=False,
                         help='Prefix of logfile name')
     parser.add_argument('--results_dir', type=str, default="TMP",
                         help='Results dir name')
@@ -115,6 +115,8 @@ def get_args():
     parser.add_argument('--federated_learning',default=False,action='store_true',help='To enable federated learning(client-server style training)')
 
     parser.add_argument('--n_clients',default = 5,type = int,help='Used to mention number of clients in federated learning setting')
+
+    parser.add_argument('--grad_clip',default=False,action = 'store_true',help='Indicates whether gradient clipping is being used')
     
     args = parser.parse_args()
 

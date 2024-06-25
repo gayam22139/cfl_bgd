@@ -6,6 +6,9 @@ from optimizers_lib.bgd_optimizer import BGD
 import torch
 
 
+max_grad_norm = 1
+
+
 class NNTrainer:
     def __init__(self, train_loader, test_loader, criterion, net, logger, **kwargs):
         # NN Configurations variables
@@ -149,7 +152,7 @@ class NNTrainer:
                 get_model(self.net).set_dataset(self.get_dataset_idx(max_epoch=max_epoch))
             train_loss, train_acc = self.forward(
                 data_loader=self.train_loader[self.get_dataset_idx(max_epoch=max_epoch)], training=True,
-                verbose_freq=verbose_freq,client_id = kwargs.get("client_id",None))
+                verbose_freq=verbose_freq,client_id = kwargs.get("client_id",None),grad_clip = kwargs.get("grad_clip",False))
             if self.save_stats_on_epoch(epoch_number, max_epoch):
                 probe_data = {"train_loss": train_loss,
                               "train_acc": train_acc,
@@ -265,7 +268,7 @@ class NNTrainer:
         self.net.eval()
         self.probes_manager.eval()
 
-    def forward(self, data_loader=None, verbose_freq=2000, training=True, inference_method="test_mc",client_id = None):
+    def forward(self, data_loader=None, verbose_freq=2000, training=True, inference_method="test_mc",client_id = None,grad_clip = False):
         if training:
             self.train_mode()
             fwd_name = "train"
@@ -366,6 +369,12 @@ class NNTrainer:
                     # Zero the gradient
                     self.optimizer.zero_grad()
                     loss.backward()
+
+                    ''' gradient clipping '''
+                    if grad_clip:
+                        if max_grad_norm is not None:
+                            torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_grad_norm)
+
                     # Accumulate gradients
                     if hasattr(self.optimizer, "aggregate_grads"):
                         self.optimizer.aggregate_grads(batch_size=inputs.size(0))

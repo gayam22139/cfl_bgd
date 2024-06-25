@@ -15,6 +15,8 @@ from ast import literal_eval
 from nn_utils.init_utils import init_model
 import optimizers_lib
 import copy
+from datetime import datetime
+import pytz
 
 
 #Arguments have been moved to a different file named argparser.py
@@ -78,10 +80,21 @@ if torch.cuda.is_available():
 # Logging
 ###########################################################################
 # Create logger
+
+IST = pytz.timezone('Asia/Kolkata')
+current_time = datetime.now(IST).strftime("%H:%M_%d-%m-%Y")
+
+
+if args.grad_clip:
+    args.results_dir = f"perm_mnist_{args.num_of_permutations + 1}_tasks_{args.num_epochs}_epochs_{args.mean_eta}_lr_{args.contpermuted_beta}_beta_with_grad_clip_{current_time}"
+else:
+    args.results_dir = f"perm_mnist_{args.num_of_permutations + 1}_tasks_{args.num_epochs}_epochs_{args.mean_eta}_lr_{args.contpermuted_beta}_beta_{current_time}"
+
 save_path = os.path.join("./logs", str(args.results_dir) + "/")
 if not os.path.exists(save_path):
     os.makedirs(save_path)
 
+args.logname = f"continous_permuted_mnist_{args.num_of_permutations + 1}_tasks"
 logger = Logger(True, save_path + args.logname, True, True)
 
 logger.info("Script args: " + str(args))
@@ -114,7 +127,7 @@ def agg_client_models(client_models,client_optimizers):
     # print(dir(client_models[0]))
     # print(dir(client_optimizers[0]))
 
-    print("-------OPTIMIZER FROM HERE-----")
+    #print("-------OPTIMIZER FROM HERE-----")
 
     model_params = {}
 
@@ -141,7 +154,7 @@ def agg_client_models(client_models,client_optimizers):
 
     model_params_lst = [layer_weights['params'] for layer_id,layer_weights in model_params.items()]
 
-    print(model_params_lst,len(model_params_lst))
+    #print(model_params_lst,len(model_params_lst))
 
 
     agg_model = copy.deepcopy(client_models[0])
@@ -170,46 +183,48 @@ def agg_client_models(client_models,client_optimizers):
     # print(agg_model_state_dict)
 
     # print(agg_model)
-
     agg_model.load_state_dict(agg_model_state_dict)
-
 
     return agg_model
 
 def test_agg_model(server_model,test_loaders):
  
-    # criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss()
 
-    # test_accuracies = []
-    # test_losses = []
+    test_accuracies = []
+    test_losses = []
 
-    # for test_loader in test_loader:
-    #     total_loss = 0
-    #     accuracy = 0
-    #     total_batches = 0
-        
-    #     for data in test_loader:
-    #         inputs,labels = data
-    #         inputs,labels = inputs.cuda(),labels.cuda()
+    with torch.no_grad():
+        server_model.eval()
+        for test_loader in test_loaders:
+            total_loss = 0
+            accuracy = 0
+            total_batches = 0
+            total = 0
+            correct = 0
 
-    #         outputs = server_model(inputs)
-    #         loss = criterion(outputs,labels)
-    #         _, predicted = torch.max(outputs.data, 1)
-    #         total += labels.size(0)
-    #         correct += (predicted == labels).sum().item()
-    #         total_loss += loss.item()
-    #         total_batches+=1
-            
-    #     accuracy += correct / total
-    #     total_loss = total_loss/total_batches
-    #     test_accuracies.append(accuracy)
-    #     test_losses.append(total_loss)
+            for data in test_loader:
+                inputs,labels = data
+                inputs,labels = inputs.cuda(),labels.cuda()
 
-    # avg_acc = sum(test_accuracies)/len(test_accuracies)
-    # avg_loss = sum(test_losses)/len(test_losses)
-    # return avg_acc,avg_loss
+                outputs = server_model(inputs)
+                loss = criterion(outputs,labels)
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+                total_loss += loss.item()
+                total_batches+=1
+                
+            accuracy += correct / total
+            total_loss = total_loss/total_batches
+            test_accuracies.append(accuracy)
+            test_losses.append(total_loss)
 
-    return 0.4,0.34
+    avg_acc = sum(test_accuracies)/len(test_accuracies)
+    avg_loss = sum(test_losses)/len(test_losses)
+    
+    logger.info(f"Task wise accuracies are {test_accuracies}")
+    return round(avg_acc * 100,3),avg_loss
 
 
 # Dataset
@@ -314,10 +329,11 @@ if args.federated_learning:
             """In federated setting the number of epochs is always 1,as we consider all iterations as 
                 one big epoch(flattened all iterations over all epochs as a single epoch)"""
 
-            if round_no > 0:
-                current_client_trainer.train_epochs(verbose_freq=500, max_epoch=client_max_epoch_counter[client_id],
+            if args.grad_clip:
+                logger.info("Gradient clipping with max_norm being done")
+            current_client_trainer.train_epochs(verbose_freq=500, max_epoch=client_max_epoch_counter[client_id],
                                 permanent_prune_on_epoch=args.permanent_prune_on_epoch,
-                                permanent_prune_on_epoch_percent=args.permanent_prune_on_epoch_percent,federated_learning=args.federated_learning,client_id = client_id,round = round_no)
+                                permanent_prune_on_epoch_percent=args.permanent_prune_on_epoch_percent,federated_learning=args.federated_learning,client_id = client_id,round = round_no,grad_clip = args.grad_clip)
             
             # print(dir(trainer))
             # print(dir(trainer.train_loader[0]))
@@ -343,12 +359,12 @@ if args.federated_learning:
         with torch.no_grad():
             for layer in server_model.parameters():
                 total+=torch.sum(layer)
-        print(f"Value of server model at round {round_no+1} is {total.item()}")
-        print("Agg model avg acc and loss",test_agg_model(server_model,test_loaders))
+        logger.info(f"Value of server model at round {round_no+1} is {total.item()}")
+        logger.info(f"Aggregated model avg acc and avg loss - {test_agg_model(server_model,test_loaders)}")
         
-        print(f"Round - {round_no+1} complete")
+        logger.info(f"Round - {round_no+1} complete")
 
-    print("Done - Federated Learning Setup")
+    logger.info("Done - Federated Learning Setup")
 
 else:
     train_loaders, test_loaders = utils.datasets.__dict__[args.dataset](batch_size=args.batch_size,
