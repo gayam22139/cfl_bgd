@@ -3,12 +3,44 @@ import numpy as np
 import random
 from torch.nn.parallel.data_parallel import DataParallel
 from time import time
+import os
+
+import matplotlib.pyplot as plt
 
 
 def get_model(model):
     if isinstance(model, DataParallel):
         return model.module
     return model
+
+def get_accuracy_loss_plot(avg_test_accuracies, avg_test_losses, results_dir, optimizer, lr):
+   
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
+    plt.figure(figsize=(12, 6))
+
+   
+    plt.subplot(1, 2, 1)
+    plt.plot(range(1, len(avg_test_accuracies) + 1), avg_test_accuracies, marker='o', linestyle='-')
+    plt.title(f'Average Test Acc Across All Tasks Per Round with with {optimizer} lr={lr}')
+    plt.xlabel('Round')
+    plt.ylabel('Accuracy (%)')
+    plt.grid(True)
+
+
+    plt.subplot(1, 2, 2)
+    plt.plot(range(1, len(avg_test_losses) + 1), avg_test_losses, marker='o', linestyle='-')
+    plt.title(f'Average Test Loss Across All Tasks Per Round with {optimizer} lr={lr}')
+    plt.xlabel('Round')
+    plt.ylabel('Loss')
+    plt.grid(True)
+
+    plt.tight_layout()
+    
+    
+    plt.savefig(os.path.join(results_dir, 'accuracy_loss_plot.png'))
+    plt.close() 
 
 
 def set_seed(seed, fully_deterministic=True):

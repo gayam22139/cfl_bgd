@@ -132,7 +132,7 @@ class NNTrainer:
                 for layer in self.net.parameters():
                     total+=torch.sum(layer)
             
-            print(f"Model value at client {kwargs.get('client_id',None) + 1} is ",total.item(),f" in round {kwargs.get("round",None) + 1}")
+            print(f"Model value at client {kwargs.get('client_id',None) + 1} is {total.item()} in round {kwargs.get('round',None) + 1}")
 
         for epoch_number in range(self.epochs_trained, max_epoch):
             # Time recorders
@@ -317,7 +317,7 @@ class NNTrainer:
             else:
                 num_of_mc_iters = 1
                 if hasattr(self.optimizer, "get_mc_iters"):
-                    num_of_mc_iters = self.optimizer.get_mc_iters()
+                    num_of_mc_iters = self.optimizer.get_mc_iters() # for BGD optimizer it is 10 
 
             for k in range(0, num_of_mc_iters):
                 torch.autograd.set_grad_enabled(training)

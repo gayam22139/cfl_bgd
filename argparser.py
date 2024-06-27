@@ -53,6 +53,12 @@ def get_args():
     parser.add_argument('--permanent_prune_on_epoch_percent', default=90, type=float,
                         help='Permanent prune percent of weights')
 
+    # SGD
+    parser.add_argument('--momentum', default=0.9, type=int)
+    parser.add_argument('--lr', default=0.01, type=float)
+    parser.add_argument('--weight_decay', default=5e-4, type=float)
+
+
     #This tells us to check accuracy after every x epochs(x is the value of test_freq)
     parser.add_argument('--test_freq', default=1, type=int,
                         help='Run test set every test_freq epochs [default: 1]')
