@@ -1,12 +1,7 @@
 __pycache__/
 .github/
 data/
-/ewc_tasks/permuted_mnist_tasks(3).pkl
-/permuted_mnist_tasks_modified_labels(3).pkl
 
-/home/gayam22139/BGD_FL/V_SGD_n_BGD_plots/logs/perm_mnist_10_tasks_100_epochs_0.01_lr_sgd_optim_4_beta_19:08_27-06-2024/agg_models/
-/home/gayam22139/BGD_FL/V_SGD_n_BGD_plots/logs/perm_mnist_10_tasks_100_epochs_0.1_lr_sgd_optim_4_beta_18:20_27-06-2024_optim_sgd/agg_models/
-/home/gayam22139/BGD_FL/V_SGD_n_BGD_plots/logs/perm_mnist_10_tasks_100_epochs_0.1_mean_eta_bdg_optim__4_beta_22:55_26-06-2024/agg_models/
-/home/gayam22139/BGD_FL/V_SGD_n_BGD_plots/logs/perm_mnist_10_tasks_100_epochs_0.01_mean_eta_bgd_optim_4_beta_22:55_26-06-2024/agg_models/
-/home/gayam22139/BGD_FL/V_SGD_n_BGD_plots/logs/perm_mnist_10_tasks_100_epochs_1_lr_sgd_optim_4_beta_17:38_27-06-2024_optim_sgd/agg_models/
-/home/gayam22139/BGD_FL/V_SGD_n_BGD_plots/logs/perm_mnist_10_tasks_100_epochs_1.0_mean_eta_bgd_optim_4_beta_22:55_26-06-2024/agg_models/
+logs/
+all_experiments_results/
+wandb/

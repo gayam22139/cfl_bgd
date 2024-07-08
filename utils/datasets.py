@@ -176,6 +176,7 @@ class DatasetsLoaders:
 
         self.federated_learning = kwargs.get("fl",False)
         self.n_clients = kwargs.get("n_clients",5)
+        self.num_aggs_per_task = kwargs.get("num_aggs_per_task", 5)
 
         pin_memory = pin_memory if torch.cuda.is_available() else False
         self.batch_size = batch_size
@@ -478,10 +479,21 @@ class DatasetsLoaders:
             #We need to generate a client specific tasks_samples_indices object
 
             if self.federated_learning:
-                round_end_iters = [_create_task_probs(total_iters,self.num_of_permutations+1,task_id,beta)[1]
+                task_end_iters = [_create_task_probs(total_iters,self.num_of_permutations+1,task_id,beta)[1]
                                     for task_id in range(self.num_of_permutations+1)]
 
+                # round_end_iters = np.linspace(0, total_iters, self.n_fl_rounds + 1, endpoint=True, dtype=int)
+                # round_end_iters = round_end_iters[1:]
+
+                task_end_iters.insert(0, 0)
+                round_end_iters = np.concatenate([np.linspace(start, stop, self.num_aggs_per_task + 1, endpoint=True)[:-1] for start, stop in zip(task_end_iters[:-1], task_end_iters[1:])])
+                round_end_iters = np.append(round_end_iters, task_end_iters[-1])
+                round_end_iters = round_end_iters[1:].astype(int)
+
+
                 print(round_end_iters)
+                print(len(round_end_iters))
+
 
                 clients_tasks_samples_indices = generate_client_datasets(tasks_datasets,self.n_clients)
                 self.client_train_loaders = []
@@ -489,12 +501,12 @@ class DatasetsLoaders:
                     client_train_sampler = FederatedContinuousMultinomialSampler(data_source=all_datasets, samples_in_batch=self.batch_size,
                                                             tasks_samples_indices=clients_tasks_samples_indices[client_id],
                                                             tasks_probs_over_iterations=self.tasks_probs_over_iterations,
-                                                            round_end_iter_lst=round_end_iters)
+                                                            round_end_iter_lst=round_end_iters) 
                     
                     train_loader = torch.utils.data.DataLoader(all_datasets,batch_size=self.batch_size,
                                                                num_workers=self.num_workers,sampler=client_train_sampler,pin_memory=pin_memory)
 
-                    self.client_train_loaders.append(train_loader)
+                    self.client_train_loaders.append(train_loader) 
             else:
                 train_sampler = ContinuousMultinomialSampler(data_source=all_datasets, samples_in_batch=self.batch_size,
                                                             tasks_samples_indices=tasks_samples_indices,
@@ -624,7 +636,7 @@ class FederatedContinuousMultinomialSampler(torch.utils.data.Sampler):
             raise ValueError("num_samples should be a positive integeral "
                              "value, but got num_samples={}".format(self.samples_in_batch))
     
-    def generate_iters_indices(self, from_iter,to_iter):
+    def generate_iters_indices(self, from_iter, to_iter):
         # from_iter = len(self.iter_indices_per_iteration)
         for iter_num in range(from_iter, to_iter):
 
@@ -1057,7 +1069,7 @@ def ds_cont_permuted_mnist(**kwargs):
                                total_iters=(kwargs.get("num_epochs")*kwargs.get("iterations_per_virtual_epc")),
                                contpermuted_beta=kwargs.get("contpermuted_beta"),
                                iterations_per_virtual_epc=kwargs.get("iterations_per_virtual_epc"),
-                               all_permutation=kwargs.get("permutations", []),fl=kwargs.get("federated_learning",False),n_clients=kwargs.get("n_clients",5))]
+                               all_permutation=kwargs.get("permutations", []),fl=kwargs.get("federated_learning",False),n_clients=kwargs.get("n_clients",5), num_aggs_per_task = kwargs.get("num_aggs_per_task", 5))]
     
     test_loaders = [tloader for ds in dataset for tloader in ds.test_loader]
     

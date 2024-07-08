@@ -40,11 +40,60 @@ python main.py --logname continuous_permuted_mnist_10_tasks --num_workers 1 --pe
 
 
 # bgd perfectly working
-python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 10 - 1 )) --optimizer bgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 10 * 10)) --std_init 0.06 --batch_size 128 --train_mc_iters 10 --inference_map --federated_learning --n_clients 5 --mean_eta 0.01 
+
+CUDA_VISIBLE_DEVICES=1 python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 10 - 1 )) --optimizer bgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 10 * 10)) --std_init 0.06 --batch_size 128 --train_mc_iters 10 --inference_map --federated_learning --n_clients 5 --mean_eta 0.01 
 
 
 # sgd 
 
-python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 10 - 1 )) --optimizer sgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 10 * 10)) --std_init 0.06 --batch_size 128 --train_mc_iters 1 --inference_map --federated_learning --n_clients 5 
-
 CUDA_VISIBLE_DEVICES=0 python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 10 - 1 )) --optimizer sgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 10 * 10)) --batch_size 128 --train_mc_iters 1 --inference_map --federated_learning --n_clients 5 --lr 0.01
+
+
+
+
+#Centralised setting commands
+
+
+
+# bgd perfectly working
+
+CUDA_VISIBLE_DEVICES=1 python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 10 - 1 )) --optimizer bgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 10 * 10)) --std_init 0.06 --batch_size 128 --train_mc_iters 10 --inference_map --mean_eta 0.01 
+
+
+# sgd 
+
+CUDA_VISIBLE_DEVICES=0 python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 10 - 1 )) --optimizer sgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 10 * 10)) --batch_size 128 --train_mc_iters 1 --inference_map --lr 0.01
+
+
+# federated addition -> increasing rounds
+
+# bgd, beta = 4
+
+CUDA_VISIBLE_DEVICES=1 python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 10 - 1 )) --optimizer bgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 10 * 10)) --std_init 0.06 --batch_size 128 --train_mc_iters 10 --inference_map --federated_learning --n_clients 5 --mean_eta 1 --num_aggs_per_task 5
+
+
+# sgd, beta = 4
+
+CUDA_VISIBLE_DEVICES=0 python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 10 - 1 )) --optimizer sgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 10 * 10)) --batch_size 128 --train_mc_iters 1 --inference_map --federated_learning --n_clients 5 --lr 0.01 --num_aggs_per_task 5 
+
+
+
+# modified aggregation with varying "max_grad_norm" [bgd 10 rounds with grad clip]
+
+# max_grad_norm = 0.5, grad_clip
+
+CUDA_VISIBLE_DEVICES=1 python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 10 - 1 )) --optimizer bgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 10 * 10)) --std_init 0.06 --batch_size 128 --train_mc_iters 10 --inference_map --federated_learning --n_clients 5 --mean_eta 1 --grad_clip --max_grad_norm 0.5
+
+# same with max_grad_norm = 1.5, 2
+
+
+
+# experiments to schedule [bgd_n_sgd : new_aggregation] [10 rounds]
+
+python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 10 - 1 )) --optimizer bgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 10 * 10)) --std_init 0.06 --batch_size 128 --train_mc_iters 10 --inference_map --federated_learning --n_clients 5 --mean_eta 1 --grad_clip --max_grad_norm 
+
+python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 10 - 1 )) --optimizer sgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 10 * 10)) --batch_size 128 --train_mc_iters 1 --inference_map --federated_learning --n_clients 5 --lr 0.01 
+
+
+
+

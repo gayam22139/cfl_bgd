@@ -4,6 +4,7 @@ from probes_lib.basic import *
 from utils.utils import AverageTracker
 from optimizers_lib.bgd_optimizer import BGD
 import torch
+import wandb
 
 
 max_grad_norm = 1
@@ -28,6 +29,8 @@ class NNTrainer:
         self.mean_eta = kwargs.get("mean_eta", 1)
 
         self.test_freq = kwargs.get("test_freq", 1)
+
+        self.max_grad_norm = kwargs.get('max_grad_norm', 1)
 
         self.bw_to_rgb = kwargs.get("bw_to_rgb", False)
 
@@ -152,7 +155,9 @@ class NNTrainer:
                 get_model(self.net).set_dataset(self.get_dataset_idx(max_epoch=max_epoch))
             train_loss, train_acc = self.forward(
                 data_loader=self.train_loader[self.get_dataset_idx(max_epoch=max_epoch)], training=True,
-                verbose_freq=verbose_freq,client_id = kwargs.get("client_id",None),grad_clip = kwargs.get("grad_clip",False))
+                verbose_freq=verbose_freq,client_id = kwargs.get("client_id",None),grad_clip = kwargs.get("grad_clip",False), round_id = kwargs.get("round",None))
+            
+            
             if self.save_stats_on_epoch(epoch_number, max_epoch):
                 probe_data = {"train_loss": train_loss,
                               "train_acc": train_acc,
@@ -177,7 +182,7 @@ class NNTrainer:
                         if hasattr(get_model(self.net), "set_dataset"):
                             get_model(self.net).set_dataset(ds_idx)
                         test_loss, test_acc = self.forward(data_loader=self.test_loader[ds_idx], training=False,
-                                                           verbose_freq=0, inference_method=inference_method)
+                                                           verbose_freq=0, inference_method=inference_method, round_id = kwargs.get("round",None))
                         avg_acc_over_tasks.add(test_acc)
                         probe_data = {"test_loss": test_loss,
                                       "test_acc": test_acc,
@@ -268,8 +273,9 @@ class NNTrainer:
         self.net.eval()
         self.probes_manager.eval()
 
-    def forward(self, data_loader=None, verbose_freq=2000, training=True, inference_method="test_mc",client_id = None,grad_clip = False):
+    def forward(self, data_loader=None, verbose_freq=2000, training=True, inference_method="test_mc",client_id = None,grad_clip = False, round_id = None):
         if training:
+            wandb.watch(self.net, log='all',idx = round_id*100 + client_id, log_freq = 10)
             self.train_mode()
             fwd_name = "train"
         else:
@@ -372,8 +378,8 @@ class NNTrainer:
 
                     ''' gradient clipping '''
                     if grad_clip:
-                        if max_grad_norm is not None:
-                            torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_grad_norm)
+                        if self.max_grad_norm is not None:
+                            torch.nn.utils.clip_grad_norm_(self.net.parameters(), self.max_grad_norm)
 
                     # Accumulate gradients
                     if hasattr(self.optimizer, "aggregate_grads"):
@@ -431,6 +437,8 @@ class NNTrainer:
             # Take a step
             if training:
                 self.optimizer.step()
+                if i % 10 == 0 :
+                    wandb.log({'loss' : loss})
 
             # Print statistics
             if verbose_freq and verbose_freq > 0 and (i % verbose_freq) == (verbose_freq - 1):

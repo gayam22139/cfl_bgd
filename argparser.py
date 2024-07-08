@@ -122,7 +122,11 @@ def get_args():
 
     parser.add_argument('--n_clients',default = 5,type = int,help='Used to mention number of clients in federated learning setting')
 
+    parser.add_argument('--num_aggs_per_task', default=1, type=int,
+                        help='Number of aggregations happen in federated training(default 10)')
+
     parser.add_argument('--grad_clip',default=False,action = 'store_true',help='Indicates whether gradient clipping is being used')
+    parser.add_argument('--max_grad_norm',default = 1.0 ,type = float, help='Used when grag clip is true')
     
     args = parser.parse_args()
 
