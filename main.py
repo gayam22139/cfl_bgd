@@ -16,7 +16,7 @@ from nn_utils.init_utils import init_model
 import optimizers_lib
 import copy
 from datetime import datetime
-import wandb
+# import wandb
 import pytz
 
 
@@ -366,13 +366,13 @@ if args.federated_learning:
 
     ''' Initialize wandb '''
 
-    wandb.init(project="bgd_fl_new_agg_strategy_v2", config={
-        "learning_rate": args.mean_eta,
-        "optimizer": args.optimizer,
-        "total_rounds": total_rounds,
-        "n_clients": args.n_clients,
-        "max_grad_norm" : args.max_grad_norm
-    }) 
+    # wandb.init(project="bgd_fl_new_agg_strategy_v2", config={
+    #     "learning_rate": args.mean_eta,
+    #     "optimizer": args.optimizer,
+    #     "total_rounds": total_rounds,
+    #     "n_clients": args.n_clients,
+    #     "max_grad_norm" : args.max_grad_norm
+    # }) 
 
   
     for round_no in range(total_rounds): 
@@ -508,7 +508,7 @@ if args.federated_learning:
     logger.info(f"Avg Test Accuracies : {avg_test_accuracies}")
     logger.info(f"Avg Test Losses : {avg_test_losses}")
     logger.info("Done - Federated Learning Setup")
-    wandb.finish()
+    # wandb.finish()
 
 else:
     train_loaders, test_loaders = utils.datasets.__dict__[args.dataset](batch_size=args.batch_size,

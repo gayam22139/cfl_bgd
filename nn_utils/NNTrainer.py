@@ -4,7 +4,7 @@ from probes_lib.basic import *
 from utils.utils import AverageTracker
 from optimizers_lib.bgd_optimizer import BGD
 import torch
-import wandb
+# import wandb
 
 
 max_grad_norm = 1
@@ -275,7 +275,7 @@ class NNTrainer:
 
     def forward(self, data_loader=None, verbose_freq=2000, training=True, inference_method="test_mc",client_id = None,grad_clip = False, round_id = None):
         if training:
-            wandb.watch(self.net, log='all',idx = round_id*100 + client_id, log_freq = 10)
+            # wandb.watch(self.net, log='all',idx = round_id*100 + client_id, log_freq = 10)
             self.train_mode()
             fwd_name = "train"
         else:
@@ -438,7 +438,8 @@ class NNTrainer:
             if training:
                 self.optimizer.step()
                 if i % 10 == 0 :
-                    wandb.log({'loss' : loss})
+                    # wandb.log({'loss' : loss})
+                    pass
 
             # Print statistics
             if verbose_freq and verbose_freq > 0 and (i % verbose_freq) == (verbose_freq - 1):
