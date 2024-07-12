@@ -279,3 +279,5 @@
 ./logs/ds_cont_split_mnist_5_tasks_50_epochs_data_type_iid_1.0_mean_eta__bgd_optim_4_beta_with_grad_clip_08:18_12-07-2024/continous_split_mnist_5_tasks-07-12_02-48-16 
 ./logs/ds_cont_split_mnist_5_tasks_50_epochs_data_type_iid_0.01_lr_sgd_optim_4_beta__08:18_12-07-2024/continous_split_mnist_5_tasks-07-12_02-48-52 
 ./logs/ds_cont_split_mnist_5_tasks_50_epochs_data_type_non_iid_0.01_lr_sgd_optim_4_beta__08:19_12-07-2024/continous_split_mnist_5_tasks-07-12_02-49-20 
+./logs/ds_cont_permuted_mnist_5_tasks_50_epochs_data_type_non_iid_1.0_mean_eta__bgd_optim_4_beta_with_grad_clip_08:52_12-07-2024/continous_permuted_mnist_5_tasks-07-12_03-22-27 
+./logs/ds_cont_permuted_mnist_5_tasks_50_epochs_data_type_non_iid_1.0_mean_eta__bgd_optim_4_beta_with_grad_clip_10:01_12-07-2024/continous_permuted_mnist_5_tasks-07-12_04-31-06 

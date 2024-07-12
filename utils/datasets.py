@@ -657,15 +657,20 @@ class DatasetsLoaders:
             
             self.tasks_probs_over_iterations = tasks_probs_over_iterations_lst
 
-            print(len(self.tasks_probs_over_iterations),self.tasks_probs_over_iterations[5800])
+            # print(len(self.tasks_probs_over_iterations),self.tasks_probs_over_iterations[5800]) 
 
             # Create probabilities of tasks over iterations
 
             #We need to generate a client specific tasks_samples_indices object
 
             if self.federated_learning:
-                round_end_iters = [_create_task_probs(total_iters,len(classes_lst),task_id,beta)[1]
+                task_end_iters = [_create_task_probs(total_iters,len(classes_lst),task_id,beta)[1]
                                     for task_id in range(len(classes_lst))]
+
+                task_end_iters.insert(0, 0)
+                round_end_iters = np.concatenate([np.linspace(start, stop, self.num_aggs_per_task + 1, endpoint=True)[:-1] for start, stop in zip(task_end_iters[:-1], task_end_iters[1:])])
+                round_end_iters = np.append(round_end_iters, task_end_iters[-1])
+                round_end_iters = round_end_iters[1:].astype(int)
 
                 print(round_end_iters)
 
