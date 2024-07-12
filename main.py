@@ -97,9 +97,9 @@ current_time = datetime.now(IST).strftime("%H:%M_%d-%m-%Y")
 
 
 if args.optimizer == 'sgd':
-    args.results_dir = f"{args.dataset}_{args.num_of_permutations + 1 if args.dataset=='ds_cont_permuted_mnist' else len(classes_lst)}_tasks_{args.num_epochs}_epochs_data_type_{'non_iid' if args.non_iid_split else 'iid'}_{args.lr}_lr_{args.optimizer}_optim_{args.contpermuted_beta}_beta{'_with_grad_clip' if args.grad_clip else '_'}_{current_time}"
+    args.results_dir = f"{args.dataset}_{args.num_of_permutations + 1 if args.dataset=='ds_cont_permuted_mnist' else len(classes_lst)}_tasks_{args.num_epochs}_epochs_alpha_{args.alpha}_data_type_{'non_iid' if args.non_iid_split else 'iid'}_{args.lr}_lr_{args.optimizer}_optim_{args.contpermuted_beta}_beta{'_with_grad_clip' if args.grad_clip else '_'}_{current_time}"
 if args.optimizer == 'bgd':
-    args.results_dir = f"{args.dataset}_{args.num_of_permutations + 1 if args.dataset=='ds_cont_permuted_mnist' else len(classes_lst)}_tasks_{args.num_epochs}_epochs_data_type_{'non_iid' if args.non_iid_split else 'iid'}_{args.mean_eta}_mean_eta__{args.optimizer}_optim_{args.contpermuted_beta}_beta{'_with_grad_clip' if args.grad_clip else '_'}_{current_time}"
+    args.results_dir = f"{args.dataset}_{args.num_of_permutations + 1 if args.dataset=='ds_cont_permuted_mnist' else len(classes_lst)}_tasks_{args.num_epochs}_epochs_alpha_{args.alpha}_data_type_{'non_iid' if args.non_iid_split else 'iid'}_{args.mean_eta}_mean_eta__{args.optimizer}_optim_{args.contpermuted_beta}_beta{'_with_grad_clip' if args.grad_clip else '_'}_{current_time}"
 
 
 
@@ -321,7 +321,11 @@ if args.federated_learning:
                                                                         iterations_per_virtual_epc=
                                                                         args.iterations_per_virtual_epc,
                                                                         contpermuted_beta=args.contpermuted_beta,
-                                                                        logger=logger,federated_learning = args.federated_learning, n_clients = args.n_clients, non_iid_split=args.non_iid_split, num_aggs_per_task = args.num_aggs_per_task, classes_lst = classes_lst)
+                                                                        logger=logger,federated_learning = args.federated_learning,
+                                                                        n_clients = args.n_clients, non_iid_split=args.non_iid_split, 
+                                                                        num_aggs_per_task = args.num_aggs_per_task, 
+                                                                        classes_lst = classes_lst,
+                                                                        alpha = args.alpha)
 
 
     #Modify below code as per Federated requirements

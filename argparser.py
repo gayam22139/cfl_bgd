@@ -132,6 +132,9 @@ def get_args():
     parser.add_argument('--non_iid_split', default=False, action='store_true',
                         help='Splits data in non_iid_fashion')
     
+    parser.add_argument('--alpha', type=float, default = 1.0, 
+                        help='degree_of_non_iid_dirichlet_parameter') # if not provided -> iid
+    
     args = parser.parse_args()
 
     return args

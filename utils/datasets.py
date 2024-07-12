@@ -145,6 +145,52 @@ def non_iid_partition(dataset, clients, total_shards, shards_size, num_shards_pe
     
     return client_dict  
 
+def dirchilet_non_iid_partition(train_data, K, alpha, use_balance=True):
+    x_train,y_train = train_data[0], train_data[1]
+
+    n_classes = len(np.unique(y_train))
+    n_samples_train = len(x_train)
+
+    all_ids_train = np.array(y_train)
+    class_ids_train = {class_num: np.where(all_ids_train == class_num)[0] for class_num in range(n_classes)}
+
+    dist_of_client = np.random.dirichlet(np.repeat(alpha, K), size=n_classes).transpose()
+    #print(dist_of_client)
+    dist_of_client /= dist_of_client.sum()
+    #print(dist)
+
+    ### Run OT if using balanced partitioning
+    if(use_balance):
+        for i in range(100):
+            s0 = dist_of_client.sum(axis=0, keepdims=True)
+            s1 = dist_of_client.sum(axis=1, keepdims=True)
+            dist_of_client /= s0
+            dist_of_client /= s1
+
+    ##### Allocate number of samples per class to each client based on distribution
+    samples_per_class_train = (np.floor(dist_of_client * n_samples_train))
+
+    # print(samples_per_class_train)
+    # print(samples_per_class_train.sum())
+
+    start_ids_train = np.zeros((K+1, n_classes), dtype=np.int32)
+    
+    for i in range(0, K):
+        start_ids_train[i+1] = start_ids_train[i] + samples_per_class_train[i]
+
+    ##### Save IDs
+    # Train
+    train_client_ids = {client_num: {} for client_num in range(K)}
+    for client_num in range(K):
+        l = np.array([], dtype=np.int32)
+        for class_num in range(n_classes):
+            start, end = start_ids_train[client_num, class_num], start_ids_train[client_num+1, class_num]
+            l = np.concatenate((l, class_ids_train[class_num][start:end].tolist())).astype(np.int32)
+        train_client_ids[client_num] = l
+
+
+    return train_client_ids 
+
 
 
 
@@ -180,10 +226,10 @@ def generate_client_datasets(tasks_datasets, non_iid_split, n_clients = 5, alpha
 
         
         if non_iid_split:
-            print(f"Non-IID split is happening")
+            print(f"Non-IID split is happening and aplha is {alpha}")
             train_size = len(dataset[1])
-            client_dict = non_iid_partition(dataset, clients=n_clients, total_shards=n_clients, shards_size=train_size//n_clients, num_shards_per_client=1)
-
+            # client_dict = non_iid_partition(dataset, clients=n_clients, total_shards=n_clients, shards_size=train_size//n_clients, num_shards_per_client=1)
+            client_dict = dirchilet_non_iid_partition(dataset, K=n_clients, alpha=alpha)
         else:
             print(f"IID split is happening")
             client_dict = iid_partition(dataset,n_clients)
@@ -244,8 +290,9 @@ class DatasetsLoaders:
 
         self.federated_learning = kwargs.get("fl",False)
         self.n_clients = kwargs.get("n_clients",5)
-        self.num_aggs_per_task = kwargs.get("num_aggs_per_task", 5)
+        self.num_aggs_per_task = kwargs.get("num_aggs_per_task", 1)
         self.non_iid_split = kwargs.get("non_iid_split", False)
+        self.alpha = kwargs.get("alpha", 1)
 
         pin_memory = pin_memory if torch.cuda.is_available() else False
         self.batch_size = batch_size
@@ -564,11 +611,15 @@ class DatasetsLoaders:
                 round_end_iters = round_end_iters[1:].astype(int)
 
 
+                # print("round_end_iters list", round_end_iters)
+
+                # breakpoint()
+
                 print(round_end_iters)
                 print(len(round_end_iters))
                 
             
-                clients_tasks_samples_indices = generate_client_datasets(tasks_datasets, self.non_iid_split, self.n_clients)
+                clients_tasks_samples_indices = generate_client_datasets(tasks_datasets, self.non_iid_split, self.n_clients, alpha= self.alpha)
                 self.client_train_loaders = []
                 for client_id in range(self.n_clients):
                     client_train_sampler = FederatedContinuousMultinomialSampler(data_source=all_datasets, samples_in_batch=self.batch_size,
@@ -672,13 +723,15 @@ class DatasetsLoaders:
                 round_end_iters = np.append(round_end_iters, task_end_iters[-1])
                 round_end_iters = round_end_iters[1:].astype(int)
 
-                print(round_end_iters)
+                # print("round_end_iters list", round_end_iters)
+
+                # breakpoint()
 
                 print("*"*100)
                 print(f"non_iid {self.non_iid_split}")
                 print("*"*100)
 
-                clients_tasks_samples_indices = generate_client_datasets(tasks_datasets, self.non_iid_split, self.n_clients)
+                clients_tasks_samples_indices = generate_client_datasets(tasks_datasets, self.non_iid_split, self.n_clients, alpha= self.alpha)
                 self.client_train_loaders = []
                 for client_id in range(self.n_clients):
                     client_train_sampler = FederatedContinuousMultinomialSampler(data_source=all_datasets, samples_in_batch=self.batch_size,
@@ -1252,7 +1305,8 @@ def ds_cont_permuted_mnist(**kwargs):
                                total_iters=(kwargs.get("num_epochs")*kwargs.get("iterations_per_virtual_epc")),
                                contpermuted_beta=kwargs.get("contpermuted_beta"),
                                iterations_per_virtual_epc=kwargs.get("iterations_per_virtual_epc"),
-                               all_permutation=kwargs.get("permutations", []),fl=kwargs.get("federated_learning",False),n_clients=kwargs.get("n_clients",5), num_aggs_per_task = kwargs.get("num_aggs_per_task", 5), non_iid_split = kwargs.get("non_iid_split", False))]
+                               all_permutation=kwargs.get("permutations", []),fl=kwargs.get("federated_learning",False),n_clients=kwargs.get("n_clients",5), num_aggs_per_task = kwargs.get("num_aggs_per_task", 5), non_iid_split = kwargs.get("non_iid_split", False),
+                               alpha = kwargs.get("alpha", 1))]
     
     test_loaders = [tloader for ds in dataset for tloader in ds.test_loader]
     
@@ -1273,7 +1327,10 @@ def ds_cont_split_mnist(**kwargs):
                                total_iters=(kwargs.get("num_epochs")*kwargs.get("iterations_per_virtual_epc")),
                                contpermuted_beta=kwargs.get("contpermuted_beta"),
                                iterations_per_virtual_epc=kwargs.get("iterations_per_virtual_epc"),
-                               fl=kwargs.get("federated_learning",False),n_clients=kwargs.get("n_clients",5), non_iid_split = kwargs.get("non_iid_split", False))]
+                               fl=kwargs.get("federated_learning",False),n_clients=kwargs.get("n_clients",5), 
+                               non_iid_split = kwargs.get("non_iid_split", False),
+                               num_aggs_per_task = kwargs.get("num_aggs_per_task", 1),
+                               alpha = kwargs.get("alpha", 1))] 
     
     test_loaders = [tloader for ds in dataset for tloader in ds.test_loader]
     
