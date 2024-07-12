@@ -7,7 +7,7 @@ import torch
 # import wandb
 
 
-max_grad_norm = 1
+
 
 
 class NNTrainer:
@@ -378,6 +378,7 @@ class NNTrainer:
 
                     ''' gradient clipping '''
                     if grad_clip:
+                        # print(f"{'*' * 100} \n max_grad_norm {self.max_grad_norm} \n{'*' * 100}")
                         if self.max_grad_norm is not None:
                             torch.nn.utils.clip_grad_norm_(self.net.parameters(), self.max_grad_norm)
 

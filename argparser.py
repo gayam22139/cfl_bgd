@@ -128,6 +128,10 @@ def get_args():
     parser.add_argument('--grad_clip',default=False,action = 'store_true',help='Indicates whether gradient clipping is being used')
     parser.add_argument('--max_grad_norm',default = 1.0 ,type = float, help='Used when grag clip is true')
     
+
+    parser.add_argument('--non_iid_split', default=False, action='store_true',
+                        help='Splits data in non_iid_fashion')
+    
     args = parser.parse_args()
 
     return args

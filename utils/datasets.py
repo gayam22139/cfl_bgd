@@ -100,6 +100,52 @@ def iid_partition(dataset, clients):
 
   return client_dict 
 
+def non_iid_partition(dataset, clients, total_shards, shards_size, num_shards_per_client):
+    """
+    non I.I.D parititioning of data over clients
+    Sort the data by the digit label
+    Divide the data into N shards of size S
+    Each of the clients will get X shards
+
+    params:
+        - dataset (torch.utils.Dataset): Dataset containing the MNIST Images
+        - clients (int): Number of Clients to split the data between
+        - total_shards (int): Number of shards to partition the data in
+        - shards_size (int): Size of each shard 
+        - num_shards_per_client (int): Number of shards of size shards_size that each client receives
+
+    returns:
+        - Dictionary of image indexes for each client
+    """
+    x_train, y_train = dataset[0], dataset[1]
+
+    shard_idxs = [i for i in range(total_shards)]
+    client_dict = {i: np.array([], dtype='int64') for i in range(clients)}
+    idxs = np.arange(len(x_train))
+    #data_labels = dataset.targets.numpy()
+
+    # idxs = [0,1,2,......,59999],y_train = [0,3,6,4,7,3,9,...........]
+
+    #label_idxs is 2x60,000 - matrix ,1st row is idxs and second row is y_train
+
+    # sort the labels
+    label_idxs = np.vstack((idxs, y_train))
+    label_idxs = label_idxs[:, label_idxs[1,:].argsort()]
+    #after the above line label_idxs = [[0,....59999],[all_class0_idxs,all_class1_idxs,......all_class9_idxs]]
+    idxs = label_idxs[0,:] 
+
+    # divide the data into total_shards of size shards_size
+    # assign num_shards_per_client to each client
+    for i in range(clients):
+        rand_set = set(np.random.choice(shard_idxs, num_shards_per_client, replace=False)) # Randomly select shard_idx / shard_idxs
+        shard_idxs = list(set(shard_idxs) - rand_set) # remove selected shard_idx from shard_idxs
+
+        for rand in rand_set:
+            client_dict[i] = np.concatenate((client_dict[i], idxs[rand*shards_size:(rand+1)*shards_size]), axis=0)
+    
+    return client_dict  
+
+
 
 
 """all_datasets - full_dataset,n_clients - number of clients to which this data has to be distributed"""
@@ -110,7 +156,7 @@ def iid_partition(dataset, clients):
 associated is there can be a scenario where samples belonging to a particular task
  do not go to a particular client)(Can this cause gradient shift?)"""
 
-def generate_client_datasets(tasks_datasets,n_clients = 5,alpha = None):
+def generate_client_datasets(tasks_datasets, non_iid_split, n_clients = 5, alpha = None):
     start_time = time.time()
     print("Client Indices Generation starts")
 
@@ -132,7 +178,15 @@ def generate_client_datasets(tasks_datasets,n_clients = 5,alpha = None):
 
         dataset = [dataset_x,dataset_y]
 
-        client_dict = iid_partition(dataset,n_clients)
+        
+        if non_iid_split:
+            print(f"Non-IID split is happening")
+            train_size = len(dataset[1])
+            client_dict = non_iid_partition(dataset, clients=n_clients, total_shards=n_clients, shards_size=train_size//n_clients, num_shards_per_client=1)
+
+        else:
+            print(f"IID split is happening")
+            client_dict = iid_partition(dataset,n_clients)
 
         for client_id in client_dict.keys():
             client_dict[client_id] = torch.tensor([len(dataset_x)*task_id+index for index in client_dict[client_id]])
@@ -191,6 +245,7 @@ class DatasetsLoaders:
         self.federated_learning = kwargs.get("fl",False)
         self.n_clients = kwargs.get("n_clients",5)
         self.num_aggs_per_task = kwargs.get("num_aggs_per_task", 5)
+        self.non_iid_split = kwargs.get("non_iid_split", False)
 
         pin_memory = pin_memory if torch.cuda.is_available() else False
         self.batch_size = batch_size
@@ -202,6 +257,8 @@ class DatasetsLoaders:
         mnist_std = [78.56749083061408]
         fashionmnist_mean = [73.14654541015625]
         fashionmnist_std = [89.8732681274414]
+
+        
 
         if dataset == "CIFAR10":
             # CIFAR10:
@@ -486,11 +543,13 @@ class DatasetsLoaders:
             
             self.tasks_probs_over_iterations = tasks_probs_over_iterations_lst
 
-            #print(len(self.tasks_probs_over_iterations),self.tasks_probs_over_iterations[5800])
+            # print(len(self.tasks_probs_over_iterations),self.tasks_probs_over_iterations[5800])
 
             # Create probabilities of tasks over iterations
 
             #We need to generate a client specific tasks_samples_indices object
+
+            
 
             if self.federated_learning:
                 task_end_iters = [_create_task_probs(total_iters,self.num_of_permutations+1,task_id,beta)[1]
@@ -507,9 +566,9 @@ class DatasetsLoaders:
 
                 print(round_end_iters)
                 print(len(round_end_iters))
-
-
-                clients_tasks_samples_indices = generate_client_datasets(tasks_datasets,self.n_clients)
+                
+            
+                clients_tasks_samples_indices = generate_client_datasets(tasks_datasets, self.non_iid_split, self.n_clients)
                 self.client_train_loaders = []
                 for client_id in range(self.n_clients):
                     client_train_sampler = FederatedContinuousMultinomialSampler(data_source=all_datasets, samples_in_batch=self.batch_size,
@@ -553,10 +612,12 @@ class DatasetsLoaders:
             tasks_datasets = []
             test_datasets = []
 
+            # print(f"full_train_mnist_dataset id {id(full_train_mnist_dataset)}")
 
             for cl_list in classes_lst:
                 mnist_sub_dataset = torch.utils.data.Subset(copy.deepcopy(full_train_mnist_dataset),indices = get_classes_idx_list(copy.deepcopy(full_train_mnist_dataset),cl_list))
                 
+                # print(f"mnist_sub_dataset id {id(mnist_sub_dataset.dataset)}")
                 mnist_sub_dataset = relabel_classes(mnist_sub_dataset)
 
                 mnist_test_sub_dataset = torch.utils.data.Subset(copy.deepcopy(full_test_mnist_dataset),indices = get_classes_idx_list(copy.deepcopy(full_test_mnist_dataset),cl_list))
@@ -569,9 +630,10 @@ class DatasetsLoaders:
         
             total_len = len(tasks_datasets[0])
 
+            test_loaders = []
             for test_dataset in test_datasets:
-                test_loaders = [torch.utils.data.DataLoader(test_dataset,batch_size=self.batch_size, shuffle=False,num_workers=self.num_workers, pin_memory=pin_memory)]
-        
+                # test_loaders = [torch.utils.data.DataLoader(test_dataset,batch_size=self.batch_size, shuffle=False,num_workers=self.num_workers, pin_memory=pin_memory)]
+                test_loaders.append(torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=pin_memory))
 
             tasks_samples_indices = [torch.tensor(range(len(tasks_datasets[0])), dtype=torch.int32)]
             for _ in range(len(classes_lst)):
@@ -591,11 +653,11 @@ class DatasetsLoaders:
 
             all_datasets = torch.utils.data.ConcatDataset(tasks_datasets)
 
-            tasks_probs_over_iterations_lst = _create_probabilites_over_iterations(total_iters,len(classes_lst),beta)
+            tasks_probs_over_iterations_lst = _create_probabilites_over_iterations(total_iters, len(classes_lst), beta)
             
             self.tasks_probs_over_iterations = tasks_probs_over_iterations_lst
 
-            #print(len(self.tasks_probs_over_iterations),self.tasks_probs_over_iterations[5800])
+            print(len(self.tasks_probs_over_iterations),self.tasks_probs_over_iterations[5800])
 
             # Create probabilities of tasks over iterations
 
@@ -607,7 +669,11 @@ class DatasetsLoaders:
 
                 print(round_end_iters)
 
-                clients_tasks_samples_indices = generate_client_datasets(tasks_datasets,self.n_clients)
+                print("*"*100)
+                print(f"non_iid {self.non_iid_split}")
+                print("*"*100)
+
+                clients_tasks_samples_indices = generate_client_datasets(tasks_datasets, self.non_iid_split, self.n_clients)
                 self.client_train_loaders = []
                 for client_id in range(self.n_clients):
                     client_train_sampler = FederatedContinuousMultinomialSampler(data_source=all_datasets, samples_in_batch=self.batch_size,
@@ -1013,6 +1079,7 @@ def ds_split_mnist(**kwargs):
         [6, 7],
         [8, 9]
     ]
+    classes_lst = kwargs.get("classes_lst", classes_lst)
     dataset = [DatasetsLoaders("MNIST", batch_size=kwargs.get("batch_size", 128),
                                num_workers=kwargs.get("num_workers", 1),
                                reduce_classes=cl, pad_to_32=kwargs.get("pad_to_32", False),
@@ -1180,7 +1247,7 @@ def ds_cont_permuted_mnist(**kwargs):
                                total_iters=(kwargs.get("num_epochs")*kwargs.get("iterations_per_virtual_epc")),
                                contpermuted_beta=kwargs.get("contpermuted_beta"),
                                iterations_per_virtual_epc=kwargs.get("iterations_per_virtual_epc"),
-                               all_permutation=kwargs.get("permutations", []),fl=kwargs.get("federated_learning",False),n_clients=kwargs.get("n_clients",5), num_aggs_per_task = kwargs.get("num_aggs_per_task", 5))]
+                               all_permutation=kwargs.get("permutations", []),fl=kwargs.get("federated_learning",False),n_clients=kwargs.get("n_clients",5), num_aggs_per_task = kwargs.get("num_aggs_per_task", 5), non_iid_split = kwargs.get("non_iid_split", False))]
     
     test_loaders = [tloader for ds in dataset for tloader in ds.test_loader]
     
@@ -1201,7 +1268,7 @@ def ds_cont_split_mnist(**kwargs):
                                total_iters=(kwargs.get("num_epochs")*kwargs.get("iterations_per_virtual_epc")),
                                contpermuted_beta=kwargs.get("contpermuted_beta"),
                                iterations_per_virtual_epc=kwargs.get("iterations_per_virtual_epc"),
-                               fl=kwargs.get("federated_learning",False),n_clients=kwargs.get("n_clients",5))]
+                               fl=kwargs.get("federated_learning",False),n_clients=kwargs.get("n_clients",5), non_iid_split = kwargs.get("non_iid_split", False))]
     
     test_loaders = [tloader for ds in dataset for tloader in ds.test_loader]
     

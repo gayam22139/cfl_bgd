@@ -65,6 +65,16 @@ for p_idx in range(args.num_of_permutations):
     random.shuffle(permutation)
     all_permutation.append(permutation)
 
+# split_classes_list
+classes_lst = [
+        [0, 1],
+        [2, 3],
+        [4, 5],
+        [6, 7],
+        [8, 9]
+    ]
+
+
 #All permutations is a list of lists -> where the size of outer list is number of permuations(received from command line) and each permuation is a list of shuffled(permuted) indices(an arrangement of 784 indices)
 
 # Set seed
@@ -86,16 +96,12 @@ IST = pytz.timezone('Asia/Kolkata')
 current_time = datetime.now(IST).strftime("%H:%M_%d-%m-%Y")
 
 
-if args.grad_clip:
-    if args.optimizer == 'sgd':
-        args.results_dir = f"perm_mnist_{args.num_of_permutations + 1}_tasks_{args.num_epochs}_epochs_{args.lr}_lr_{args.optimizer}_optim__{args.contpermuted_beta}_beta_with_grad_clip_{current_time}"
-    if args.optimizer == 'bgd':
-        args.results_dir = f"perm_mnist_{args.num_of_permutations + 1}_tasks_{args.num_epochs}_epochs_{args.mean_eta}_mean_eta__{args.optimizer}_optim_{args.contpermuted_beta}_beta_with_grad_clip_{current_time}"
-else:
-    if args.optimizer == 'sgd':
-        args.results_dir = f"perm_mnist_{args.num_of_permutations + 1}_tasks_{args.num_epochs}_epochs_{args.lr}_lr_{args.optimizer}_optim_{args.contpermuted_beta}_beta_{current_time}"
-    if args.optimizer == 'bgd':
-        args.results_dir = f"perm_mnist_{args.num_of_permutations + 1}_tasks_{args.num_epochs}_epochs_{args.mean_eta}_mean_eta_{args.optimizer}_optim_{args.contpermuted_beta}_beta_{current_time}"
+if args.optimizer == 'sgd':
+    args.results_dir = f"{args.dataset}_{args.num_of_permutations + 1 if args.dataset=='ds_cont_permuted_mnist' else len(classes_lst)}_tasks_{args.num_epochs}_epochs_data_type_{'non_iid' if args.non_iid_split else 'iid'}_{args.lr}_lr_{args.optimizer}_optim_{args.contpermuted_beta}_beta{'_with_grad_clip' if args.grad_clip else '_'}_{current_time}"
+if args.optimizer == 'bgd':
+    args.results_dir = f"{args.dataset}_{args.num_of_permutations + 1 if args.dataset=='ds_cont_permuted_mnist' else len(classes_lst)}_tasks_{args.num_epochs}_epochs_data_type_{'non_iid' if args.non_iid_split else 'iid'}_{args.mean_eta}_mean_eta__{args.optimizer}_optim_{args.contpermuted_beta}_beta{'_with_grad_clip' if args.grad_clip else '_'}_{current_time}"
+
+
 
 save_path = os.path.join("./logs", str(args.results_dir) + "/")
 if not os.path.exists(save_path):
@@ -110,8 +116,12 @@ with open(f'all_experiments_results/{args.results_dir}.txt', 'w') as f:
     f.write(f"{'*'*100}\n")
     f.write(f"Writing results to {args.results_dir}\n")
 
+if args.dataset == 'ds_cont_permuted_mnist':
+    args.logname = f"continous_permuted_mnist_{args.num_of_permutations + 1}_tasks"
 
-args.logname = f"continous_permuted_mnist_{args.num_of_permutations + 1}_tasks"
+if args.dataset == 'ds_cont_split_mnist':
+    args.logname = f"continous_split_mnist_{len(classes_lst)}_tasks"
+
 logger = Logger(True, save_path + args.logname, True, True)
 
 logger.info("Script args: " + str(args))
@@ -311,7 +321,7 @@ if args.federated_learning:
                                                                         iterations_per_virtual_epc=
                                                                         args.iterations_per_virtual_epc,
                                                                         contpermuted_beta=args.contpermuted_beta,
-                                                                        logger=logger,federated_learning = args.federated_learning, n_clients = args.n_clients, num_aggs_per_task = args.num_aggs_per_task)
+                                                                        logger=logger,federated_learning = args.federated_learning, n_clients = args.n_clients, non_iid_split=args.non_iid_split, num_aggs_per_task = args.num_aggs_per_task, classes_lst = classes_lst)
 
 
     #Modify below code as per Federated requirements
@@ -325,8 +335,16 @@ if args.federated_learning:
     client_optimizers = {client_id:None for client_id in range(args.n_clients)}
     client_max_epoch_counter = {client_id:1 for client_id in range(args.n_clients)}
 
-    total_rounds = (args.num_of_permutations + 1) * (args.num_aggs_per_task)
     ''' Number of  aggregations per one task multiplied by num_of_tasks gives us total_fl_rounds '''
+    
+    if args.dataset == 'ds_cont_permuted_mnist':
+        total_rounds = (args.num_of_permutations + 1) * (args.num_aggs_per_task)
+
+    if args.dataset == 'ds_cont_split_mnist':
+        total_rounds = (len(classes_lst)) * (args.num_aggs_per_task)
+
+    
+    
 
     optimizer_model = optimizers_lib.__dict__[args.optimizer]
     if args.optimizer == 'bgd':
