@@ -147,6 +147,77 @@ lastlogs_logger = None
 print("Dataset is ",args.dataset)
 
 
+''' prev aggregation 
+
+
+def agg_client_models(client_models,client_optimizers):
+
+    #server_model = client_models[0].named_parameters()
+
+    # print(dir(client_models[0]))
+    # print(dir(client_optimizers[0]))
+
+    #print("-------OPTIMIZER FROM HERE-----")
+
+    model_params = {}
+
+    total_clients = len(client_optimizers.keys())
+
+    for client_id in client_optimizers.keys():
+    
+        for layer_id,layer in enumerate(client_optimizers[client_id].param_groups):
+
+            if client_id == 0:
+                model_params[layer_id] = {}
+                model_params[layer_id]['mean_param'] = torch.div(layer['mean_param'],total_clients)
+                model_params[layer_id]['std_param'] = torch.div(layer['std_param'],total_clients)
+            
+            else:
+                model_params[layer_id]['mean_param'].add_(torch.div(layer['mean_param'],total_clients))
+                model_params[layer_id]['std_param'].add_(torch.div(layer['std_param'],total_clients))
+
+
+    for layer_id in model_params.keys():
+        model_params[layer_id]['eps'] = torch.normal(torch.zeros_like(model_params[layer_id]['std_param']), 1)
+        model_params[layer_id]['params'] = model_params[layer_id]['mean_param'].add(model_params[layer_id]['eps'].mul(model_params[layer_id]['std_param']))
+
+
+    model_params_lst = [layer_weights['params'] for layer_id,layer_weights in model_params.items()]
+
+    #print(model_params_lst,len(model_params_lst))
+
+
+    agg_model = copy.deepcopy(client_models[0])
+
+    agg_model_state_dict = {}
+
+
+    # print(client_models[0].state_dict())
+    # print("Length of model state dict is ",len(client_models[0].state_dict()))
+    # print(dir(client_models[0]))
+
+    layer_id = 0
+    for layer in agg_model.state_dict().keys():
+        # print("Model stats")
+        # print(type(client_models[0].state_dict()[layer]))
+        # print(client_models[0].state_dict()[layer].shape) 
+
+        agg_model_state_dict[layer] = model_params_lst[layer_id]
+        layer_id+=1
+
+        # print("Our lst stats")
+        # print(type(model_params_lst[layer_id]))
+        # print(model_params_lst[layer_id].shape)
+        # layer_id+=1
+    
+    # print(agg_model_state_dict)
+
+    # print(agg_model)
+    agg_model.load_state_dict(agg_model_state_dict)
+
+    return agg_model   '''
+
+
 def agg_client_models(client_models, client_optimizers):
 
     # server_model = client_models[0].named_parameters()

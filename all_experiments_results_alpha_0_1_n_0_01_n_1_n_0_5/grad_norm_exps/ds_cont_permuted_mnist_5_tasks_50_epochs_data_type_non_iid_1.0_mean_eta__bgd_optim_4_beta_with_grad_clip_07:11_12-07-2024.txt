@@ -1,0 +1,2 @@
+****************************************************************************************************
+Writing results to ds_cont_permuted_mnist_5_tasks_50_epochs_data_type_non_iid_1.0_mean_eta__bgd_optim_4_beta_with_grad_clip_07:11_12-07-2024

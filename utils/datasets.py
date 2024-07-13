@@ -611,7 +611,7 @@ class DatasetsLoaders:
                 round_end_iters = round_end_iters[1:].astype(int)
 
 
-                # print("round_end_iters list", round_end_iters)
+                print("round_end_iters list", round_end_iters)
 
                 # breakpoint()
 
@@ -723,7 +723,7 @@ class DatasetsLoaders:
                 round_end_iters = np.append(round_end_iters, task_end_iters[-1])
                 round_end_iters = round_end_iters[1:].astype(int)
 
-                # print("round_end_iters list", round_end_iters)
+                print("round_end_iters list", round_end_iters)
 
                 # breakpoint()
 
@@ -1297,9 +1297,11 @@ def ds_cont_permuted_mnist(**kwargs):
     :param num_workers: Num workers.
     :return: A tuple of (train_loaders, test_loaders). train_loaders is a list of 1 data loader - it loads the
                 permuted MNIST dataset continuously as described in the paper. test_loaders is a list of 1+permutations
-                data loaders, one for each dataset.
+                data loaders, one for each dataset. 
 
     """
+
+    
     dataset = [DatasetsLoaders("CONTPERMUTEDMNIST", batch_size=kwargs.get("batch_size", 128),
                                num_workers=kwargs.get("num_workers", 1),
                                total_iters=(kwargs.get("num_epochs")*kwargs.get("iterations_per_virtual_epc")),
