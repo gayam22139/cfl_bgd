@@ -135,6 +135,8 @@ def get_args():
     parser.add_argument('--alpha', type=float, default = 1.0, 
                         help='degree_of_non_iid_dirichlet_parameter') # if not provided -> iid
     
+    parser.add_argument('--alpha_mg',type=float,default=0.5,help = 'Mixture of gaussians parameter')
+    
     args = parser.parse_args()
 
     return args

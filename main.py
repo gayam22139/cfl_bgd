@@ -176,7 +176,7 @@ def agg_client_models_avg(client_models,client_optimizers):
                 model_params[layer_id]['mean_param'].add_(torch.div(layer['mean_param'],total_clients))
                 model_params[layer_id]['std_param'].add_(torch.div(layer['std_param'],total_clients))
 
-
+    
     for layer_id in model_params.keys():
         model_params[layer_id]['eps'] = torch.normal(torch.zeros_like(model_params[layer_id]['std_param']), 1)
         model_params[layer_id]['params'] = model_params[layer_id]['mean_param'].add(model_params[layer_id]['eps'].mul(model_params[layer_id]['std_param']))
@@ -215,7 +215,7 @@ def agg_client_models_avg(client_models,client_optimizers):
     # print(agg_model)
     agg_model.load_state_dict(agg_model_state_dict)
 
-    return agg_model  
+    return agg_model,model_params
 
 
 def agg_client_models_new(client_models, client_optimizers):
@@ -302,7 +302,7 @@ def agg_client_models_new(client_models, client_optimizers):
     # print(agg_model)
     agg_model.load_state_dict(agg_model_state_dict)
 
-    return agg_model 
+    return agg_model,model_params
 
 
 def agg_client_models_sgd(client_models, client_optimizers):
@@ -422,6 +422,7 @@ if args.federated_learning:
     
 
     optimizer_model = optimizers_lib.__dict__[args.optimizer]
+
     if args.optimizer == 'bgd':
         optimizer_params = dict({"logger": logger,
                                         "mean_eta": args.mean_eta,
@@ -433,6 +434,13 @@ if args.federated_learning:
                                         "momentum": args.momentum,
                                         "lr": args.lr,
                                         "weight_decay": args.weight_decay}, **literal_eval(" ".join(args.optimizer_params)))
+
+    if args.optimizer == 'bgd_new_update':
+        optimizer_params = dict({"logger": logger,
+                                        "mean_eta": args.mean_eta,
+                                        "std_init": args.std_init,
+                                        "mc_iters": args.train_mc_iters,"alpha_mg":args.alpha_mg}, **literal_eval(" ".join(args.optimizer_params)))
+    
 
     probes_manager = ProbesManager()
     server_model = models.__dict__[args.nn_arch](probes_manager=probes_manager)
@@ -467,6 +475,12 @@ if args.federated_learning:
     #     "max_grad_norm" : args.max_grad_norm
     # }) 
 
+    # mean --> params
+    server_model_params  = {}
+    
+    for layer_name, param in server_model.named_parameters:
+        server_model_params[layer_name]['g_mean_param'] = server_model[layer_name]
+        server_model_params[layer_name]['g_std_param'] = torch.full_like(server_model[layer_name],args.std_init) 
   
     for round_no in range(total_rounds): 
         avg_acc, avg_loss = 0, 0
@@ -488,15 +502,27 @@ if args.federated_learning:
                                     )
 
                 current_client_trainer.net = copy.deepcopy(server_model)
+
                 #current_client_trainer.net = copy.deepcopy(server_model)
-                current_client_trainer.optimizer = optimizer_model(current_client_trainer.net, probes_manager=current_client_trainer.probes_manager, **optimizer_params)
+                
+                if args.optimizer == 'bgd_new_update':
+                    current_client_trainer.optimizer = optimizer_model(current_client_trainer.net, server_model_params, probes_manager=current_client_trainer.probes_manager, **optimizer_params)
+
+                else:
+                    current_client_trainer.optimizer = optimizer_model(current_client_trainer.net, probes_manager=current_client_trainer.probes_manager, **optimizer_params)
 
             #Update the model in the trainer object
             else:
                 current_client_trainer = client_trainers[client_id]
                 current_client_trainer.net = copy.deepcopy(server_model)
                 #current_client_trainer.net = copy.deepcopy(server_model)
-                current_client_trainer.optimizer = optimizer_model(current_client_trainer.net, probes_manager=current_client_trainer.probes_manager, **optimizer_params)
+
+                if args.optimizer == 'bgd_new_update':
+                    current_client_trainer.optimizer = optimizer_model(current_client_trainer.net, server_model_params,  probes_manager=current_client_trainer.probes_manager, **optimizer_params)
+
+                else:
+                    current_client_trainer.optimizer = optimizer_model(current_client_trainer.net, probes_manager=current_client_trainer.probes_manager, **optimizer_params)
+
                 
             """In federated setting the number of epochs is always 1,as we consider all iterations as 
                 one big epoch(flattened all iterations over all epochs as a single epoch)"""
@@ -554,7 +580,7 @@ if args.federated_learning:
 
         if args.optimizer == 'bgd':
             # new aggregation
-            server_model = agg_client_models_new(client_models, client_optimizers)
+            server_model, server_model_params = agg_client_models_avg(client_models, client_optimizers)
 
             # # avg aggregation
             # server_model = agg_client_models_avg(client_models, client_optimizers)

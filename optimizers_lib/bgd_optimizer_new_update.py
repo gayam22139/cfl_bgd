@@ -2,7 +2,7 @@ import torch
 from torch.optim.optimizer import Optimizer
 
 
-class BGD(Optimizer):
+class BGD_NEW_UPDATE(Optimizer):
     """Implements BGD.
     A simple usage of BGD would be:
     for samples, labels in batches:
@@ -15,7 +15,7 @@ class BGD(Optimizer):
             optimizer.aggregate_grads()
         optimizer.step()
     """
-    def __init__(self, params, std_init, mean_eta=1, mc_iters=10):
+    def __init__(self, params, server_model_params,  std_init, mean_eta=1, mc_iters=10,alpha_mg = 0.5):
         """
         Initialization of BGD optimizer
         group["mean_param"] is the learned mean.
@@ -26,14 +26,20 @@ class BGD(Optimizer):
         :param mc_iters: Number of Monte Carlo iteration. Used for correctness check.
                          Use None to disable the check.
         """
-        super(BGD, self).__init__(params, defaults={})
+        super(BGD_NEW_UPDATE, self).__init__(params, defaults={})
         assert mc_iters is None or (type(mc_iters) == int and mc_iters > 0), "mc_iters should be positive int or None."
         self.std_init = std_init
         self.mean_eta = mean_eta
         self.mc_iters = mc_iters
+        self.alpha_mg = alpha_mg
+        self.server_model_params = {ind:value for ind, (layer_name, value) in enumerate(server_model_params.named_parameters)}
         # Initialize mu (mean_param) and sigma (std_param)
         # breakpoint()
-        for group in self.param_groups:
+
+
+
+
+        for ind, group in enumerate(self.param_groups):
             assert len(group["params"]) == 1, "BGD optimizer does not support multiple params in a group"
             # group['params'][0] is the weights
             assert isinstance(group["params"][0], torch.Tensor), "BGD expect param to be a tensor"
@@ -44,7 +50,10 @@ class BGD(Optimizer):
             '''The above line has been replaced by the below line - Shiva Bhai Recommendation'''
             group["std_param"] = torch.full_like(group["params"][0].data,self.std_init)
 
-        self._init_accumulators()
+            group["g_mean_param"] = self.server_model_params[ind]['mean_param']
+            group["g_std_param"] = self.server_model_params[ind]['std_param']
+
+        self._init_accumulators() 
 
     def get_mc_iters(self):
         return self.mc_iters
@@ -115,20 +124,18 @@ class BGD(Optimizer):
             e_grad_eps = group["grad_mul_eps_sum"].div(self.mc_iters_taken)
             # Update mean and STD params
 
-            g_mean = 1
-            g_std = 1
-            alpha_mg = 0.5
+            g_mean = group["g_mean_param"] #1
+            g_std = group["g_std_param"] #1
             var = std.pow(2)
             g_var = g_std.pow(2) 
 
-            denominator = alpha_mg*(var).add( (1 - alpha_mg)*(g_var) )
-            mean = (alpha_mg*(var.mul(g_mean))).add( (1-alpha_mg)*( g_var.mul(mean)) ).sub( (var.mul(g_var).mul(e_grad)))
+            denominator = self.alpha_mg*(var).add( (1 - self.alpha_mg)*(g_var) )
+            mean = (self.alpha_mg*(var.mul(g_mean))).add( (1-self.alpha_mg)*( g_var.mul(mean)) ).sub( (var.mul(g_var).mul(e_grad)))
             mean = mean.div(denominator)
 
-            sqrt_term =  torch.mul( (g_var.mul(var)) , torch.sqrt( (alpha_mg*var).add((1-alpha_mg)*g_var).add( torch.pow(((0.5*g_std.mul(std)).mul(e_grad)), 2) ) ) )
+            sqrt_term =  torch.mul( (g_var.mul(var)) , torch.sqrt( (self.alpha_mg*var).add((1-self.alpha_mg)*g_var).add( torch.pow(((0.5*g_std.mul(std)).mul(e_grad)), 2) ) ) )
             std = sqrt_term.sub(0.5*g_var.mul(var).mul(e_grad_eps))
             std = std.div(denominator)
-
 
 
             # mean.add_(-std.pow(2).mul(e_grad).mul(self.mean_eta))

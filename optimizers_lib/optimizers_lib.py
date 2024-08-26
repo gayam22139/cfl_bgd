@@ -1,5 +1,6 @@
 import torch.optim as optim
 from .bgd_optimizer import BGD
+from .bgd_optimizer_new_update import BGD_NEW_UPDATE
 
 
 def bgd(model, **kwargs):
@@ -14,6 +15,22 @@ def bgd(model, **kwargs):
     all_params = [{'params': params} for l, (name, params) in enumerate(model.named_parameters())]
     # breakpoint()
     return BGD(all_params, **bgd_params)
+
+
+
+def bgd_new_update(model, **kwargs):
+    logger = kwargs.get("logger", None)
+    assert(logger is not None)
+    bgd_params = {
+        "mean_eta": kwargs.get("mean_eta", 1),
+        "std_init": kwargs.get("std_init", 0.02),
+        "mc_iters": kwargs.get("mc_iters", 10),
+        "alpha_mg": kwargs.get("alpha_mg",0.5)
+    }
+    logger.info("BGD params: " + str(bgd_params))
+    all_params = [{'params': params} for l, (name, params) in enumerate(model.named_parameters())]
+    # breakpoint()
+    return BGD_NEW_UPDATE(all_params, **bgd_params)
 
 
 def sgd(model, **kwargs):

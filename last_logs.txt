@@ -357,3 +357,5 @@
 ./logs/ds_cont_permuted_mnist_5_tasks_150_epochs_alpha_100000.0_data_type_non_iid_0.01_lr_sgd_optim_4_beta__08:39_17-07-2024/continous_permuted_mnist_5_tasks-07-17_03-09-54 
 ./logs/ds_cont_split_mnist_5_tasks_150_epochs_alpha_100000.0_data_type_non_iid_1.0_mean_eta__bgd_optim_4_beta_with_grad_clip_08:40_17-07-2024/continous_split_mnist_5_tasks-07-17_03-10-35 
 ./logs/ds_cont_split_mnist_5_tasks_150_epochs_alpha_100000.0_data_type_non_iid_0.01_lr_sgd_optim_4_beta__08:40_17-07-2024/continous_split_mnist_5_tasks-07-17_03-10-52 
+./logs/ds_cont_permuted_mnist_5_tasks_150_epochs_alpha_0.01_data_type_non_iid_1.0_mean_eta__bgd_optim_4_beta_with_grad_clip_20:10_26-08-2024/continous_permuted_mnist_5_tasks-08-26_14-40-39 
+./logs/TMP/continous_permuted_mnist_5_tasks-08-26_17-17-08 
