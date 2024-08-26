@@ -26,3 +26,4 @@ for i,params in enumerate(model_params):
 
 
 print(model)
+

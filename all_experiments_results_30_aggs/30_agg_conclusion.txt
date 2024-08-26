@@ -1,0 +1,15 @@
+50 aggregations 
+
+epochs 20
+bgd: 45.18
+sgd: 34.48
+
+
+epochs 30
+bgd: 45.85
+sgd: 29.51 
+
+
+epochs 50
+bgd: 46.554
+sgd: 24.14 

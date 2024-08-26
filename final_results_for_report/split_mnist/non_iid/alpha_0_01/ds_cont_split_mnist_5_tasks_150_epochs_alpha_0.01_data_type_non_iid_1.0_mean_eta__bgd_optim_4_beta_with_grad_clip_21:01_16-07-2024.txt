@@ -1,0 +1,6 @@
+****************************************************************************************************
+Writing results to ds_cont_split_mnist_5_tasks_150_epochs_alpha_0.01_data_type_non_iid_1.0_mean_eta__bgd_optim_4_beta_with_grad_clip_21:01_16-07-2024
+Task-wise accuracies bgd_optim after all rounds are [[99.622], [86.336, 99.119], [75.319, 96.376, 98.292], [55.366, 67.875, 27.108, 99.043], [46.667, 74.927, 25.4, 98.238, 99.294]]
+Task-wise losses bgd_optim after all rouds are [[0.015], [0.546, 0.043], [1.691, 0.263, 0.1], [6.045, 3.416, 8.437, 0.067], [8.335, 2.753, 10.677, 0.157, 0.027]]
+Average accuracies bgd_optim after all rouds are [99.622, 92.727, 89.996, 62.348, 68.905]
+Average losses bgd_optim after all rouds are [0.015, 0.295, 0.685, 4.491, 4.39]

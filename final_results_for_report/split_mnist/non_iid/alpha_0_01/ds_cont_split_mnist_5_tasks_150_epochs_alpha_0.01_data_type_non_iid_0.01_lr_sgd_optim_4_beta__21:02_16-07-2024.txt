@@ -1,0 +1,6 @@
+****************************************************************************************************
+Writing results to ds_cont_split_mnist_5_tasks_150_epochs_alpha_0.01_data_type_non_iid_0.01_lr_sgd_optim_4_beta__21:02_16-07-2024
+Task-wise accuracies sgd_optim after all rounds are [[96.548], [72.861, 98.678], [65.579, 89.863, 98.079], [52.766, 58.815, 15.742, 99.043], [38.061, 58.57, 12.7, 96.375, 99.042]]
+Task-wise losses sgd_optim after all rouds are [[0.117], [0.865, 0.038], [1.284, 0.385, 0.069], [2.352, 2.524, 5.389, 0.023], [3.164, 2.396, 6.054, 0.106, 0.023]]
+Average accuracies sgd_optim after all rouds are [96.548, 85.769, 84.507, 56.591, 60.95]
+Average losses sgd_optim after all rouds are [0.117, 0.452, 0.579, 2.572, 2.349]

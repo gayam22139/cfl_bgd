@@ -147,10 +147,10 @@ lastlogs_logger = None
 print("Dataset is ",args.dataset)
 
 
-''' prev aggregation 
+''' prev aggregation '''
 
 
-def agg_client_models(client_models,client_optimizers):
+def agg_client_models_avg(client_models,client_optimizers):
 
     #server_model = client_models[0].named_parameters()
 
@@ -215,10 +215,10 @@ def agg_client_models(client_models,client_optimizers):
     # print(agg_model)
     agg_model.load_state_dict(agg_model_state_dict)
 
-    return agg_model   '''
+    return agg_model  
 
 
-def agg_client_models(client_models, client_optimizers):
+def agg_client_models_new(client_models, client_optimizers):
 
     # server_model = client_models[0].named_parameters()
 
@@ -450,7 +450,7 @@ if args.federated_learning:
     init_model(get_model(server_model), **init_params)
 
     # optimizer model
-    optimizer = optimizer_model(server_model, probes_manager=probes_manager, **optimizer_params)
+    optimizer = optimizer_model(server_model, probes_manager=probes_manager, **optimizer_params) 
 
     avg_test_accuracies = []
     avg_test_losses = []
@@ -553,7 +553,14 @@ if args.federated_learning:
             server_model = agg_client_models_sgd(client_models, client_optimizers)
 
         if args.optimizer == 'bgd':
-            server_model = agg_client_models(client_models, client_optimizers)
+            # new aggregation
+            server_model = agg_client_models_new(client_models, client_optimizers)
+
+            # # avg aggregation
+            # server_model = agg_client_models_avg(client_models, client_optimizers)
+
+        
+
 
         # # Save the aggregated model
             
