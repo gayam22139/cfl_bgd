@@ -192,4 +192,18 @@ python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_
 
 # Dirchilet (Bgd new update)
 
-python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 5 - 1 )) --optimizer bgd_new_update --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 5 * 30)) --batch_size 128 --train_mc_iters 1 --inference_map --federated_learning --n_clients 5 --lr 0.01 --non_iid --alpha 0.01 --alpha_mg 0.5
+python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 5 - 1 )) --optimizer bgd_new_update --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 5 * 30)) --batch_size 128 --train_mc_iters 1 --inference_map --federated_learning --n_clients 5 --lr 0.01 --non_iid --alpha 0.01 --alpha_mg 0.5 
+
+
+## Experiments with new update
+
+## BGD_NEW (new aggregation and old aggregation) [5 tasks, 30 epochs]
+
+# IID
+python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 5 - 1 )) --optimizer bgd_new_update --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 5 * 30)) --batch_size 128 --train_mc_iters 1 --inference_map --federated_learning --n_clients 5 --lr 0.01 --non_iid --alpha 100000 --alpha_mg 0.5 
+
+# Non-IID
+python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 5 - 1 )) --optimizer bgd_new_update --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 5 * 30)) --batch_size 128 --train_mc_iters 1 --inference_map --federated_learning --n_clients 5 --lr 0.01 --non_iid --alpha 0.01 --alpha_mg 0.5 
+
+
+

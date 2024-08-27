@@ -42,7 +42,7 @@ if args.inference_initstd:
 
 assert(len(inference_methods) > 0) 
 
-if args.optimizer != "bgd":
+if args.optimizer != "bgd_new_update":
     assert args.train_mc_iters == 1, "Monte Carlo iterations are for BGD optimizer only"
     assert len(inference_methods) == 1 and "map" in inference_methods, "When not using BGD, must use MAP for inference"
 
@@ -98,7 +98,7 @@ current_time = datetime.now(IST).strftime("%H:%M_%d-%m-%Y")
 
 if args.optimizer == 'sgd':
     args.results_dir = f"{args.dataset}_{args.num_of_permutations + 1 if args.dataset=='ds_cont_permuted_mnist' else len(classes_lst)}_tasks_{args.num_epochs}_epochs_alpha_{args.alpha}_data_type_{'non_iid' if args.non_iid_split else 'iid'}_{args.lr}_lr_{args.optimizer}_optim_{args.contpermuted_beta}_beta{'_with_grad_clip' if args.grad_clip else '_'}_{current_time}"
-if args.optimizer == 'bgd':
+if args.optimizer == 'bgd_new_update'or args.optimizer == 'bgd':
     args.results_dir = f"{args.dataset}_{args.num_of_permutations + 1 if args.dataset=='ds_cont_permuted_mnist' else len(classes_lst)}_tasks_{args.num_epochs}_epochs_alpha_{args.alpha}_data_type_{'non_iid' if args.non_iid_split else 'iid'}_{args.mean_eta}_mean_eta__{args.optimizer}_optim_{args.contpermuted_beta}_beta{'_with_grad_clip' if args.grad_clip else '_'}_{current_time}"
 
 
@@ -212,10 +212,20 @@ def agg_client_models_avg(client_models,client_optimizers):
     
     # print(agg_model_state_dict)
 
+    # Rename keys to g_mean_param and g_std_param
+    
+
     # print(agg_model)
     agg_model.load_state_dict(agg_model_state_dict)
 
-    return agg_model,model_params
+    new_model_params = {}
+    for layer_id, layer_weights in model_params.items():
+        new_model_params[layer_id] = {
+            'g_mean_param': layer_weights['mean_param'],
+            'g_std_param': layer_weights['std_param']
+        }
+
+    return agg_model, new_model_params # model_params # we are saying aggregated model as model_
 
 
 def agg_client_models_new(client_models, client_optimizers):
@@ -302,7 +312,14 @@ def agg_client_models_new(client_models, client_optimizers):
     # print(agg_model)
     agg_model.load_state_dict(agg_model_state_dict)
 
-    return agg_model,model_params
+    new_model_params = {}
+    for layer_id, layer_weights in model_params.items():
+        new_model_params[layer_id] = {
+            'g_mean_param': layer_weights['mean_param'],
+            'g_std_param': layer_weights['std_param']
+        }
+
+    return agg_model, new_model_params
 
 
 def agg_client_models_sgd(client_models, client_optimizers):
@@ -462,10 +479,10 @@ if args.federated_learning:
      # mean --> params
     server_model_params  = {}
 
-    print(server_model.module)
+    # print(server_model.module)
     
     for layer_name, param in server_model.named_parameters():
-        print(layer_name)
+        # print(layer_name)
         server_model_params[layer_name] = {}
 
         server_model_params[layer_name]['g_mean_param'] = param
@@ -509,7 +526,7 @@ if args.federated_learning:
                                     test_freq=args.test_freq,
                                     optimizer=copy.deepcopy(optimizer),
                                     max_grad_norm = args.max_grad_norm
-                                    )
+                                    ) 
 
                 current_client_trainer.net = copy.deepcopy(server_model)
 
@@ -588,9 +605,10 @@ if args.federated_learning:
         if args.optimizer == 'sgd':
             server_model = agg_client_models_sgd(client_models, client_optimizers)
 
-        if args.optimizer == 'bgd':
+        if args.optimizer == 'bgd_new_update':
             # new aggregation
-            server_model, server_model_params = agg_client_models_avg(client_models, client_optimizers)
+            # server_model, server_model_params = agg_client_models_avg(client_models, client_optimizers)
+            server_model, server_model_params = agg_client_models_new(client_models, client_optimizers)
 
             # # avg aggregation
             # server_model = agg_client_models_avg(client_models, client_optimizers)

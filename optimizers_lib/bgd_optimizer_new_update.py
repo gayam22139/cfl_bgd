@@ -50,6 +50,8 @@ class BGD_NEW_UPDATE(Optimizer):
             '''The above line has been replaced by the below line - Shiva Bhai Recommendation'''
             group["std_param"] = torch.full_like(group["params"][0].data,self.std_init)
 
+            # breakpoint() 
+
             group["g_mean_param"] = self.server_model_params[ind]['g_mean_param']
             group["g_std_param"] = self.server_model_params[ind]['g_std_param']
 
