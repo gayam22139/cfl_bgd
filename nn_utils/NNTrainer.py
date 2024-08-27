@@ -3,6 +3,7 @@ from utils.utils import *
 from probes_lib.basic import *
 from utils.utils import AverageTracker
 from optimizers_lib.bgd_optimizer import BGD
+from optimizers_lib.bgd_optimizer_new_update import BGD_NEW_UPDATE
 import torch
 # import wandb
 
@@ -328,7 +329,7 @@ class NNTrainer:
             for k in range(0, num_of_mc_iters):
                 torch.autograd.set_grad_enabled(training)
                 self.single_mc_iter_time.reset() if self.single_mc_iter_time is not None else None
-                if type(self.optimizer) == BGD:
+                if type(self.optimizer) == BGD or type(self.optimizer) == BGD_NEW_UPDATE:
                     # Randomize weights
                     if not training and inference_method == "map":
                         # If using map, weights are deterministic given their mean. Generate weights using std=0

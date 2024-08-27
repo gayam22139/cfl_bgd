@@ -32,8 +32,8 @@ class BGD_NEW_UPDATE(Optimizer):
         self.mean_eta = mean_eta
         self.mc_iters = mc_iters
         self.alpha_mg = alpha_mg
-        self.server_model_params = {ind:value for ind, (layer_name, value) in enumerate(server_model_params.named_parameters)}
-        # Initialize mu (mean_param) and sigma (std_param)
+        self.server_model_params = {ind:value for ind, (layer_name, value) in enumerate(server_model_params.items())}
+        # Initialize mu (mean_param) and sigma (std_param) 
         # breakpoint()
 
 
@@ -50,10 +50,10 @@ class BGD_NEW_UPDATE(Optimizer):
             '''The above line has been replaced by the below line - Shiva Bhai Recommendation'''
             group["std_param"] = torch.full_like(group["params"][0].data,self.std_init)
 
-            group["g_mean_param"] = self.server_model_params[ind]['mean_param']
-            group["g_std_param"] = self.server_model_params[ind]['std_param']
+            group["g_mean_param"] = self.server_model_params[ind]['g_mean_param']
+            group["g_std_param"] = self.server_model_params[ind]['g_std_param']
 
-        self._init_accumulators() 
+        self._init_accumulators()  
 
     def get_mc_iters(self):
         return self.mc_iters

@@ -449,6 +449,8 @@ if args.federated_learning:
         server_model = torch.nn.DataParallel(server_model).cuda()
         logger.info("Transformed model to CUDA")
 
+    # breakpoint()
+
     criterion = nn.CrossEntropyLoss()
 
     init_params = {"logger": logger}
@@ -457,8 +459,23 @@ if args.federated_learning:
 
     init_model(get_model(server_model), **init_params)
 
+     # mean --> params
+    server_model_params  = {}
+
+    print(server_model.module)
+    
+    for layer_name, param in server_model.named_parameters():
+        print(layer_name)
+        server_model_params[layer_name] = {}
+
+        server_model_params[layer_name]['g_mean_param'] = param
+        server_model_params[layer_name]['g_std_param'] = torch.full_like(param,args.std_init) 
+
     # optimizer model
-    optimizer = optimizer_model(server_model, probes_manager=probes_manager, **optimizer_params) 
+    if args.optimizer == 'bgd_new_update':
+        optimizer = optimizer_model(server_model, server_model_params,probes_manager=probes_manager, **optimizer_params) 
+    else:
+        optimizer = optimizer_model(server_model,probes_manager=probes_manager, **optimizer_params)
 
     avg_test_accuracies = []
     avg_test_losses = []
@@ -475,13 +492,6 @@ if args.federated_learning:
     #     "max_grad_norm" : args.max_grad_norm
     # }) 
 
-    # mean --> params
-    server_model_params  = {}
-    
-    for layer_name, param in server_model.named_parameters:
-        server_model_params[layer_name]['g_mean_param'] = server_model[layer_name]
-        server_model_params[layer_name]['g_std_param'] = torch.full_like(server_model[layer_name],args.std_init) 
-  
     for round_no in range(total_rounds): 
         avg_acc, avg_loss = 0, 0
         for client_id in range(args.n_clients):

@@ -18,7 +18,7 @@ def bgd(model, **kwargs):
 
 
 
-def bgd_new_update(model, **kwargs):
+def bgd_new_update(model, server_model_params,**kwargs):
     logger = kwargs.get("logger", None)
     assert(logger is not None)
     bgd_params = {
@@ -30,7 +30,7 @@ def bgd_new_update(model, **kwargs):
     logger.info("BGD params: " + str(bgd_params))
     all_params = [{'params': params} for l, (name, params) in enumerate(model.named_parameters())]
     # breakpoint()
-    return BGD_NEW_UPDATE(all_params, **bgd_params)
+    return BGD_NEW_UPDATE(all_params,server_model_params, **bgd_params)
 
 
 def sgd(model, **kwargs):
