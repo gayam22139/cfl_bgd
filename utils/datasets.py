@@ -226,7 +226,11 @@ def generate_client_datasets(tasks_datasets, non_iid_split, n_clients = 5, alpha
 
         
         if non_iid_split:
-            print(f"Non-IID split is happening and aplha is {alpha}")
+            if alpha in [1,1e5]:
+                split_type = "IID"
+            else:
+                split_type = "Non-IID"
+            print(f"{split_type} split is happening and alpha is {alpha}")
             train_size = len(dataset[1])
             # client_dict = non_iid_partition(dataset, clients=n_clients, total_shards=n_clients, shards_size=train_size//n_clients, num_shards_per_client=1)
             client_dict = dirchilet_non_iid_partition(dataset, K=n_clients, alpha=alpha)

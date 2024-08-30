@@ -42,7 +42,7 @@ if args.inference_initstd:
 
 assert(len(inference_methods) > 0) 
 
-if args.optimizer != "bgd_new_update":
+if args.optimizer != "bgd_new_update" and args.optimizer != "bgd":
     assert args.train_mc_iters == 1, "Monte Carlo iterations are for BGD optimizer only"
     assert len(inference_methods) == 1 and "map" in inference_methods, "When not using BGD, must use MAP for inference"
 
@@ -605,7 +605,7 @@ if args.federated_learning:
         if args.optimizer == 'sgd':
             server_model = agg_client_models_sgd(client_models, client_optimizers)
 
-        if args.optimizer == 'bgd_new_update':
+        if args.optimizer == 'bgd_new_update' or args.optimizer == 'bgd':
             # new aggregation
             # server_model, server_model_params = agg_client_models_avg(client_models, client_optimizers)
             server_model, server_model_params = agg_client_models_new(client_models, client_optimizers)

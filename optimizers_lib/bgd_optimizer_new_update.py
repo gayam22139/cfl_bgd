@@ -132,16 +132,26 @@ class BGD_NEW_UPDATE(Optimizer):
             g_var = g_std.pow(2) 
 
             denominator = self.alpha_mg*(var).add( (1 - self.alpha_mg)*(g_var) )
-            mean = (self.alpha_mg*(var.mul(g_mean))).add( (1-self.alpha_mg)*( g_var.mul(mean)) ).sub( (var.mul(g_var).mul(e_grad)))
-            mean = mean.div(denominator)
+
+            mean_client = (self.alpha_mg*(var.mul(g_mean))).add( (1-self.alpha_mg)*( g_var.mul(mean)) ).sub( (var.mul(g_var).mul(e_grad)))
+            mean_client = mean_client.div(denominator)
 
             sqrt_term =  torch.mul( (g_var.mul(var)) , torch.sqrt( (self.alpha_mg*var).add((1-self.alpha_mg)*g_var).add( torch.pow(((0.5*g_std.mul(std)).mul(e_grad)), 2) ) ) )
-            std = sqrt_term.sub(0.5*g_var.mul(var).mul(e_grad_eps))
-            std = std.div(denominator)
+            std_client = sqrt_term.sub(0.5*g_var.mul(var).mul(e_grad_eps))
+            std_client = std_client.div(denominator)
+
+            # group['mean_param'] = mean
+            # group['std_param'] = std
+
+            print("Denominator is ",denominator)
+
+            mean.copy_(mean_client)
+            std.copy_(std_client)
 
 
             # mean.add_(-std.pow(2).mul(e_grad).mul(self.mean_eta))
             # sqrt_term = torch.sqrt(e_grad_eps.mul(std).div(2).pow(2).add(1)).mul(std)
             # std.copy_(sqrt_term.add(-e_grad_eps.mul(std.pow(2)).div(2)))
+
         self.randomize_weights(force_std=0)
         self._init_accumulators()

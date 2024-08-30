@@ -1,0 +1,2 @@
+****************************************************************************************************
+Writing results to ds_cont_permuted_mnist_5_tasks_150_epochs_alpha_0.01_data_type_non_iid_0.01_lr_sgd_optim_4_beta__17:52_28-08-2024

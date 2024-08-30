@@ -206,4 +206,36 @@ python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_
 python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 5 - 1 )) --optimizer bgd_new_update --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 5 * 30)) --batch_size 128 --train_mc_iters 1 --inference_map --federated_learning --n_clients 5 --lr 0.01 --non_iid --alpha 0.01 --alpha_mg 0.5 
 
 
+## Initial two are with fedavg, later two are with new_aggregation
 
+SGD
+
+python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 5 - 1 )) --optimizer sgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 5 * 30)) --batch_size 128 --train_mc_iters 1 --inference_map --federated_learning --n_clients 5 --lr 0.01 --non_iid --alpha 0.01 (Running)
+
+BGD 
+python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 5 - 1 )) --optimizer bgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 5 * 30)) --std_init 0.06 --batch_size 128 --train_mc_iters 10 --inference_map --federated_learning --n_clients 5 --mean_eta 1 --grad_clip --max_grad_norm 1  --non_iid --alpha 0.01 
+
+
+
+#### Scheduling two experiments with  **********BGD************ 
+
+IID
+python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 5 - 1 )) --optimizer bgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 5 * 30)) --std_init 0.06 --batch_size 128 --train_mc_iters 10 --inference_map --federated_learning --n_clients 5 --mean_eta 1 --grad_clip --max_grad_norm 1  --non_iid --alpha 100000
+
+Non-IID
+python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 5 - 1 )) --optimizer bgd --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 5 * 30)) --std_init 0.06 --batch_size 128 --train_mc_iters 10 --inference_map --federated_learning --n_clients 5 --mean_eta 1 --grad_clip --max_grad_norm 1  --non_iid --alpha 0.01 
+
+
+
+## Experiments with new update [with varying alpha_mg]
+
+## BGD_NEW (new aggregation and old aggregation) [5 tasks, 30 epochs]
+
+# IID
+python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 5 - 1 )) --optimizer bgd_new_update --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 5 * 30)) --batch_size 128 --train_mc_iters 1 --inference_map --federated_learning --n_clients 5 --lr 0.01 --non_iid --alpha 100000 --alpha_mg 0.9
+
+python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 5 - 1 )) --optimizer bgd_new_update --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 5 * 30)) --batch_size 128 --train_mc_iters 1 --inference_map --federated_learning --n_clients 5 --lr 0.01 --non_iid --alpha 100000 --alpha_mg 0.1
+
+python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 5 - 1 )) --optimizer bgd_new_update --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 5 * 30)) --batch_size 128 --train_mc_iters 1 --inference_map --federated_learning --n_clients 5 --lr 0.01 --non_iid --alpha 100000 --alpha_mg 0.8
+
+python main.py --num_workers 1 --permute_seed 2019 --seed 1000 --iterations_per_virtual_epc 469 --contpermuted_beta 4 --num_of_permutations $(( 5 - 1 )) --optimizer bgd_new_update --nn_arch mnist_simple_net_200width_domainlearning_784input_10cls_1ds --dataset ds_cont_permuted_mnist --num_epochs $(( 5 * 30)) --batch_size 128 --train_mc_iters 1 --inference_map --federated_learning --n_clients 5 --lr 0.01 --non_iid --alpha 100000 --alpha_mg 0.2 
