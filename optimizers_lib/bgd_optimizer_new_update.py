@@ -12,7 +12,7 @@ class BGD_NEW_UPDATE(Optimizer):
             loss = cirterion(output, labels)
             optimizer.zero_grad()
             loss.backward()
-            optimizer.aggregate_grads()
+            optimizer.aggaregate_grads()
         optimizer.step()
     """
     def __init__(self, params, server_model_params,  std_init, mean_eta=1, mc_iters=10,alpha_mg = 0.5):
@@ -35,9 +35,7 @@ class BGD_NEW_UPDATE(Optimizer):
         self.server_model_params = {ind:value for ind, (layer_name, value) in enumerate(server_model_params.items())}
         # Initialize mu (mean_param) and sigma (std_param) 
         # breakpoint()
-
-
-
+        self.global_model_param_groups = []
 
         for ind, group in enumerate(self.param_groups):
             assert len(group["params"]) == 1, "BGD optimizer does not support multiple params in a group"
@@ -47,13 +45,14 @@ class BGD_NEW_UPDATE(Optimizer):
             group["mean_param"] = group["params"][0].data.clone()
             #group["std_param"] = torch.zeros_like(group["params"][0].data).add_(self.std_init)
 
-            '''The above line has been replaced by the below line - Shiva Bhai Recommendation'''
             group["std_param"] = torch.full_like(group["params"][0].data,self.std_init)
 
-            # breakpoint() 
+            self.global_model_param_groups.append({"g_mean_param":self.server_model_params[ind]['g_mean_param'].detach().clone(),
+                                                   "g_std_param":self.server_model_params[ind]['g_std_param'].detach().clone()})
 
-            group["g_mean_param"] = self.server_model_params[ind]['g_mean_param']
-            group["g_std_param"] = self.server_model_params[ind]['g_std_param']
+            # print("Breakpoint 1 Here")
+            # breakpoint()
+
 
         self._init_accumulators()  
 
@@ -118,7 +117,7 @@ class BGD_NEW_UPDATE(Optimizer):
                                                                               + ", but took " + \
                                                                               str(self.mc_iters_taken) + " MC iters"
         # need global mu, sigma
-        for group in self.param_groups:
+        for ind,group in enumerate(self.param_groups):
             mean = group["mean_param"] # mu k n-1
             std = group["std_param"] # sigma k n-1 
             # Divide gradients by MC iters to get expectation
@@ -126,27 +125,29 @@ class BGD_NEW_UPDATE(Optimizer):
             e_grad_eps = group["grad_mul_eps_sum"].div(self.mc_iters_taken)
             # Update mean and STD params
 
-            g_mean = group["g_mean_param"] #1
-            g_std = group["g_std_param"] #1
+            g_mean = self.global_model_param_groups[ind]["g_mean_param"]
+            g_std = self.global_model_param_groups[ind]["g_std_param"]
+
             var = std.pow(2)
             g_var = g_std.pow(2) 
 
             denominator = self.alpha_mg*(var).add( (1 - self.alpha_mg)*(g_var) )
 
-            mean_client = (self.alpha_mg*(var.mul(g_mean))).add( (1-self.alpha_mg)*( g_var.mul(mean)) ).sub( (var.mul(g_var).mul(e_grad)))
+            mean_client = (self.alpha_mg*(var.mul(g_mean))).add( (1-self.alpha_mg)*( g_var.mul(mean)) ).sub(self.mean_eta * ((var.mul(g_var).mul(e_grad))) )
             mean_client = mean_client.div(denominator)
 
-            sqrt_term =  torch.mul( (g_var.mul(var)) , torch.sqrt( (self.alpha_mg*var).add((1-self.alpha_mg)*g_var).add( torch.pow(((0.5*g_std.mul(std)).mul(e_grad)), 2) ) ) )
+            
+            sqrt_term =  torch.mul( (g_std.mul(std)) , torch.sqrt( (self.alpha_mg*var).add((1-self.alpha_mg)*g_var).add( torch.pow(((0.5*g_std.mul(std)).mul(e_grad)), 2) ) ) )
             std_client = sqrt_term.sub(0.5*g_var.mul(var).mul(e_grad_eps))
             std_client = std_client.div(denominator)
 
-            # group['mean_param'] = mean
-            # group['std_param'] = std
+            group['mean_param'] = mean_client
+            group['std_param'] = std_client
 
-            print("Denominator is ",denominator)
+            # print("Denominator is ",denominator)
 
-            mean.copy_(mean_client)
-            std.copy_(std_client)
+            # mean.copy_(mean_client)
+            # std.copy_(std_client)
 
 
             # mean.add_(-std.pow(2).mul(e_grad).mul(self.mean_eta))

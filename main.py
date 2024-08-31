@@ -607,8 +607,8 @@ if args.federated_learning:
 
         if args.optimizer == 'bgd_new_update' or args.optimizer == 'bgd':
             # new aggregation
-            # server_model, server_model_params = agg_client_models_avg(client_models, client_optimizers)
-            server_model, server_model_params = agg_client_models_new(client_models, client_optimizers)
+            server_model, server_model_params = agg_client_models_avg(client_models, client_optimizers)
+            #server_model, server_model_params = agg_client_models_new(client_models, client_optimizers)
 
             # # avg aggregation
             # server_model = agg_client_models_avg(client_models, client_optimizers)
